@@ -1,0 +1,74 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Loading...</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdn.jsdelivr.net/webtorrent/latest/webtorrent.min.js"></script>
+  <script>
+    let client = new WebTorrent()
+    let torrentId = 'magnet:?xt=urn:btih:acc2e182334ad07276356d7db6f9faf5cd5d9be4&dn=www&tr=udp%3A%2F%2Fexodus.desync.com%3A6969&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969&tr=udp%3A%2F%2Ftracker.internetwarriors.net%3A1337&tr=udp%3A%2F%2Ftracker.leechers-paradise.org%3A6969&tr=udp%3A%2F%2Ftracker.openbittorrent.com%3A80&tr=wss%3A%2F%2Ftracker.btorrent.xyz&tr=wss%3A%2F%2Ftracker.fastcast.nz&tr=wss%3A%2F%2Ftracker.openwebtorrent.com'
+    let fileMap = null
+    let observer = null
+
+    window.onload = function() {
+      render(torrentId)
+    }
+
+    function render(torrentId) {
+      client.add(torrentId, function (torrent) {
+        torrent.on('done', function() {
+          fileMap = {}
+          for (let f of torrent.files) {
+            fileMap[f.name] = f
+          }
+          overwriteDocument()
+        })
+      })
+    }
+
+    function overwriteDocument() {
+      fileMap['index.html'].getBuffer(function(err, buffer) {
+        if (err) throw err
+        var newHtml = document.createElement('html')
+        newHtml.innerHTML = buffer.toString()
+        document.replaceChild(newHtml, document.documentElement);
+        updateDOM()
+        setObserver()
+      })
+    }
+
+    function updateDOM() {
+      for (let elem of document.querySelectorAll('[pk-src]')) {
+        if (elem.attributes['src'] != null) continue
+        let file = fileMap[elem.attributes['pk-src'].value]
+        if (file != null) updateAttribute(elem, 'src', file)
+      }
+      for (let elem of document.querySelectorAll('[pk-href]')) {
+        if (elem.attributes['href'] != null) continue
+        let file = fileMap[elem.attributes['pk-href'].value]
+        if (file != null) updateAttribute(elem, 'href', file)
+      }
+    }
+
+    function updateAttribute(elem, attribute, file) {
+      file.getBlobURL((err, url) => {
+        if (err) throw err
+        elem[attribute] = url
+      })
+    }
+
+    function setObserver() {
+      if (observer != null) ovserver.disconnect()
+      observer = new MutationObserver(function() {
+        updateDOM()
+      })
+      let config = { attributes: true, childList: true, subtree: true }
+      observer.observe(document.body, config)
+    }
+  </script>
+</head>
+<body>
+  <h1>Loading...</h1>
+</body>
+</html>
