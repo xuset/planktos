@@ -8,7 +8,7 @@ this.addEventListener('fetch', function(event) {
   let name = url.pathname.substr(1)
   console.log('SW Fetch', url, url.host, url.pathname, 'name: ' + name)
 
-  if (name === '') return
+  if (name === 'www/' || name === 'planktos.js') return
 
   event.respondWith(new Promise(function(resolve) {
     filePromises[name] = resolve
@@ -18,8 +18,8 @@ this.addEventListener('fetch', function(event) {
 
 self.addEventListener('message', function(event){
   console.log("SW Received Message: " + event.data.name)
-  files[event.data.name] = event.data.blob
-  if (event.data.name === 'index.html') files[''] = event.data.blob
+  files['www/' + event.data.name] = event.data.blob
+  if (event.data.name === 'index.html') files['www/'] = event.data.blob
   resolvePromises()
 })
 
