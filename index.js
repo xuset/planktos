@@ -2,15 +2,13 @@ module.exports = Planktos
 
 var WebTorrent = require('webtorrent')
 
-function Planktos (torrentId, opts) {
+function Planktos (opts) {
   var self = this
-  if (!(self instanceof Planktos)) return new Planktos(torrentId, opts)
-  if (!torrentId) throw new Error('torrentId must be specified')
+  if (!(self instanceof Planktos)) return new Planktos(opts)
   if (!opts) opts = {}
 
   self.webtorrent = opts.webtorrent || new WebTorrent()
 
-  self._download(torrentId)
   self._registerSW(opts)
 }
 
@@ -31,6 +29,7 @@ Planktos.prototype._sendFileToSW = function (file) {
     if (err) throw err
     if (navigator.serviceWorker.controller != null) {
       var message = {
+        type: 'file',
         name: file.name,
         blob: blob
       }
@@ -40,20 +39,43 @@ Planktos.prototype._sendFileToSW = function (file) {
   })
 }
 
+Planktos.prototype._sendSwRequest = function (msg) {
+  return new Promise(function (resolve, reject) {
+    if (!('serviceWorker' in navigator)) return reject(new Error('SW not supported'))
+
+    console.log('Sending request', msg)
+    var channel = new MessageChannel()
+    channel.port1.onmessage = function (event) {
+      console.log('Received response', event.data)
+      if (event.data.error) {
+        reject(event.data.error)
+      } else {
+        resolve(event.data)
+      }
+    }
+    navigator.serviceWorker.controller.postMessage(msg, [channel.port2])
+  })
+}
+
 Planktos.prototype._registerSW = function (opts) {
+  var self = this
+  if (!('serviceWorker' in navigator)) return
   var sw = opts.sw || '/sw.js'
   var swOpts = { scope: opts.scope || '/' }
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register(sw, swOpts).then(function (reg) {
-      if (reg.installing) {
-        console.log('Service worker installing')
-      } else if (reg.waiting) {
-        console.log('Service worker installed')
-      } else if (reg.active) {
-        console.log('Service worker active')
-      }
-    }).catch(function (err) {
-      console.log('Registration failed with ' + err)
-    })
-  }
+
+  navigator.serviceWorker.register(sw, swOpts).then(function (reg) {
+    if (reg.installing) {
+      console.log('Service worker installing')
+    } else if (reg.waiting) {
+      console.log('Service worker installed')
+    } else if (reg.active) {
+      console.log('Service worker active')
+      self._sendSwRequest({type: 'torrent'}).then(function (response) {
+        console.log('Beginning downloaad', response, response.torrentId)
+        self._download(response.torrentId)
+      })
+    }
+  }).catch(function (err) {
+    console.log('Registration failed with ' + err)
+  })
 }

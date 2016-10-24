@@ -12,7 +12,7 @@
   },
   "scripts": {
     "standard": "standard",
-    "bundle": "standard && browserify index.js -o bundle.js -s Planktos",
+    "bundle": "standard && browserify autostart.js -o bundle.js -s Planktos",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "standard": {
@@ -23,6 +23,10 @@
     "globals": [
       "URL",
       "Response",
+      "Request",
+      "caches",
+      "MessageChannel",
+      "localStorage",
       "Blob",
       "addEventListener",
       "location"
