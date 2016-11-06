@@ -18,13 +18,49 @@ Planktos.prototype._download = function (torrentId) {
     torrent.on('done', function () {
       console.log('Torrent download complete')
       for (var f of torrent.files) {
-        self._sendFileToSW(f)
+        sendFileToSW(f)
       }
     })
   })
 }
 
-Planktos.prototype._sendFileToSW = function (file) {
+Planktos.prototype._onSwMessage = function (event) {
+  var self = this
+  console.log('Received sw message', event.data)
+  if (event.data.type === 'download') {
+    self._download(event.data.torrentId)
+  } else {
+    throw new Error('Unknown type: ' + event.data.type)
+  }
+}
+
+Planktos.prototype._registerSW = function (opts) {
+  var self = this
+  if (!('serviceWorker' in navigator)) return
+  var sw = opts.sw || '/sw.js'
+  var swOpts = { scope: opts.scope || '/' }
+
+  navigator.serviceWorker.addEventListener('message', function (event) {
+    self._onSwMessage(event)
+  })
+
+  sendSwRequest({type: 'available'})
+
+  navigator.serviceWorker.register(sw, swOpts).then(function (reg) {
+    if (reg.installing) {
+      console.log('Service worker installing')
+    } else if (reg.waiting) {
+      console.log('Service worker installed')
+    } else if (reg.active) {
+      sendSwRequest({type: 'available'})
+      console.log('Service worker active')
+    }
+  }).catch(function (err) {
+    console.log('Registration failed with ' + err)
+  })
+}
+
+function sendFileToSW (file) {
   file.getBlob(function (err, blob) {
     if (err) throw err
     if (navigator.serviceWorker.controller != null) {
@@ -34,48 +70,23 @@ Planktos.prototype._sendFileToSW = function (file) {
         blob: blob
       }
       console.log('Sent ' + file.name + ' to service worker')
-      navigator.serviceWorker.controller.postMessage(message)
+      sendSwRequest(message)
     }
   })
 }
 
-Planktos.prototype._sendSwRequest = function (msg) {
+function sendSwRequest (msg) {
   return new Promise(function (resolve, reject) {
     if (!('serviceWorker' in navigator)) return reject(new Error('SW not supported'))
+    if (!navigator.serviceWorker.controller) return reject(new Error('SW not active'))
 
     console.log('Sending request', msg)
     var channel = new MessageChannel()
     channel.port1.onmessage = function (event) {
       console.log('Received response', event.data)
-      if (event.data.error) {
-        reject(event.data.error)
-      } else {
-        resolve(event.data)
-      }
+      resolve(event.data)
     }
     navigator.serviceWorker.controller.postMessage(msg, [channel.port2])
   })
 }
 
-Planktos.prototype._registerSW = function (opts) {
-  var self = this
-  if (!('serviceWorker' in navigator)) return
-  var sw = opts.sw || '/sw.js'
-  var swOpts = { scope: opts.scope || '/' }
-
-  navigator.serviceWorker.register(sw, swOpts).then(function (reg) {
-    if (reg.installing) {
-      console.log('Service worker installing')
-    } else if (reg.waiting) {
-      console.log('Service worker installed')
-    } else if (reg.active) {
-      console.log('Service worker active')
-      self._sendSwRequest({type: 'torrent'}).then(function (response) {
-        console.log('Beginning downloaad', response, response.torrentId)
-        self._download(response.torrentId)
-      })
-    }
-  }).catch(function (err) {
-    console.log('Registration failed with ' + err)
-  })
-}

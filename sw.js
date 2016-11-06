@@ -2,8 +2,11 @@
 var filePromises = {}
 var files = {}
 var config = null
+var delegator = null
+var available = []
 
 loadConfig()
+assignDelegator()
 
 addEventListener('fetch', function (event) {
   var url = new URL(event.request.url)
@@ -13,6 +16,8 @@ addEventListener('fetch', function (event) {
   if (name === '') name = 'index.html'
   if (name === 'bundle.js' && !(name in files)) return
   if (event.clientId == null && !(name in files)) return
+
+  if (delegator == null) assignDelegator()
 
   console.log('SW Fetch', 'clientId: ' + event.clientId, 'name: ' + name)
 
@@ -31,10 +36,12 @@ addEventListener('message', function (event) {
   if (event.data.type === 'file') {
     files[event.data.name] = event.data.blob
     resolvePromises()
-  } else if (event.data.type === 'torrent') {
-    event.ports[0].postMessage({torrentId: config.torrentId})
+    event.ports[0].postMessage({})
+  } else if (event.data.type === 'available') {
+    available.push(event.source.id)
+    if (delegator == null) assignDelegator()
   } else {
-    event.ports[0].postMessage({error: new Error('message type not supported')})
+    event.ports[0].postMessage({error: 'message type not supported'})
   }
 })
 
@@ -66,65 +73,27 @@ addEventListener('install', function (event) {
 function loadConfig () {
   return caches.open('planktosV1')
     .then(cache => cache.match(new Request('/planktos.config.json')))
-    .then(response => response.json())
+    .then(response => response ? response.json() : null)
     .then(json => {
       console.log('FOUND CONFIG', json)
-      config = config || json
+      config = json || config
       return config
     })
 }
 
-// function openDatabase (name) {
-//   return new Promise(function (resolve, reject) {
-//     var dbOpenReq = indexedDB.open(name)
-//     var upgraded = false
-//     dbOpeReq.onerror = function (event) {
-//       reject(dbOpeReq.error)
-//     }
-//     request.onsuccess = function (event) {
-//       if (!upgraded) resolve(event.target.result)
-//     }
-//     request.onupgradeneeded = function (event) {
-//       upgraded = true
-//       var db = event.target.result
-//       var objectStore = db.createObjectStore('files')
-//       objectStore.transaction.oncomplete = function (event) {
-//         resolve(db)
-//       }
-//     }
-//   }
-// }
-//
-// function getFile(filename) {
-//   return new Promise(function (resolve, reject) {
-//     var transaction = db.transaction (['files'])
-//     var objectStore = transaction.objectStore('files')
-//     var request = objectStore.get(filename)
-//     request.onerror = function (event) {
-//       reject(request.error)
-//     }
-//     request.onsuccess = function (event) {
-//       resolve(request.result)
-//     }
-//   })
-// }
-//
-// function putFile(filename, blob) {
-//   return new Promise(function (resolve, reject) {
-//     var transaction = db.transaction (['files'], 'write')
-//     transaction.oncomplete = function (event) {
-//       // TODO does this need to be handled?
-//     }
-//
-//     transaction.onerror = function (event) {
-//       reject(transaction.error)
-//     }
-//
-//     var objectStore = transaction.objectStore('files')
-//     var request = objectStore.put(blob, filename)
-//     request.onsuccess = function () {
-//       resolve()
-//     }
-//     }
-//   })
-// }
+function assignDelegator () {
+  console.log('Assigning Delegator')
+  this.clients.matchAll().then(clients => {
+    var potentials = clients.filter(c => available.indexOf(c.id) !== -1)
+    console.log('Found ' + clients.length + ' clients and ' + potentials.length + ' potentials')
+    if (delegator == null && potentials.length > 0) {
+      if (config.torrentId == null) throw new Error('cannot start download. torrentId unkown.')
+      delegator = potentials[0]
+      var msg = {
+        type: 'download',
+        torrentId: config.torrentId
+      }
+      delegator.postMessage(msg)
+    }
+  })
+}
