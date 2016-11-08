@@ -17,7 +17,7 @@ addEventListener('fetch', function (event) {
   if (name === 'bundle.js' && !(name in files)) return
   if (event.clientId == null && !(name in files)) return
 
-  if (delegator == null) assignDelegator()
+  assignDelegator()
 
   console.log('SW Fetch', 'clientId: ' + event.clientId, 'name: ' + name)
 
@@ -39,7 +39,7 @@ addEventListener('message', function (event) {
     event.ports[0].postMessage({})
   } else if (event.data.type === 'available') {
     available.push(event.source.id)
-    if (delegator == null) assignDelegator()
+    assignDelegator()
   } else {
     event.ports[0].postMessage({error: 'message type not supported'})
   }
@@ -82,11 +82,13 @@ function loadConfig () {
 }
 
 function assignDelegator () {
-  console.log('Assigning Delegator')
   this.clients.matchAll().then(clients => {
     var potentials = clients.filter(c => available.indexOf(c.id) !== -1)
-    console.log('Found ' + clients.length + ' clients and ' + potentials.length + ' potentials')
-    if (delegator == null && potentials.length > 0) {
+    var redelegate = !delegator || !potentials.find(c => c.id === delegator.id)
+    console.log('DELG', delegator ? delegator.id : null, potentials)
+    if (redelegate && potentials.length > 0) {
+      console.log('Found', potentials.length + '/' + clients.length, 'potential delegators')
+      console.log('Delegating to', potentials[0].id)
       if (config.torrentId == null) throw new Error('cannot start download. torrentId unkown.')
       delegator = potentials[0]
       var msg = {
