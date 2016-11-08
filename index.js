@@ -1,6 +1,8 @@
 module.exports = Planktos
 
 var WebTorrent = require('webtorrent')
+var BlobChunkStore = require('blob-chunk-store')
+var IdbBlobStore = require('idb-blob-store')
 
 function Planktos (opts) {
   var self = this
@@ -14,7 +16,8 @@ function Planktos (opts) {
 
 Planktos.prototype._download = function (torrentId) {
   var self = this
-  self.webtorrent.add(torrentId, function (torrent) {
+  var opts = {store: IdbChunkStore}
+  self.webtorrent.add(torrentId, opts, function (torrent) {
     torrent.on('done', function () {
       console.log('Torrent download complete')
       for (var f of torrent.files) {
@@ -90,3 +93,8 @@ function sendSwRequest (msg) {
   })
 }
 
+function IdbChunkStore (chunkLength, opts) {
+  var namespace = opts.torrent.infoHash
+  var idb = new IdbBlobStore({name: namespace})
+  return new BlobChunkStore(chunkLength, idb)
+}

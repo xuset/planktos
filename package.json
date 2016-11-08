@@ -4,6 +4,7 @@
   "description": "building a p2p web",
   "main": "index.js",
   "dependencies": {
+    "idb-blob-store": "^1.2.0",
     "webtorrent": "^0.97.2"
   },
   "devDependencies": {
@@ -12,7 +13,7 @@
   },
   "scripts": {
     "standard": "standard",
-    "bundle": "standard && browserify autostart.js -o bundle.js -s Planktos",
+    "bundle": "standard && browserify autostart.js -o bundle.js -s Planktos --debug",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "standard": {
