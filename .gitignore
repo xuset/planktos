@@ -4,4 +4,4 @@ typings
 build
 *.swp
 *bundle.js
-www
+www/*.torrent
