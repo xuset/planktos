@@ -12,6 +12,10 @@ function Planktos (opts) {
   self.webtorrent = opts.webtorrent || new WebTorrent()
 
   self._registerSW(opts)
+
+  window.addEventListener('beforeunload', function () {
+    sendSwRequest({type: 'unavailable'})
+  })
 }
 
 Planktos.prototype._download = function (torrentId) {

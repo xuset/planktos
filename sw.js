@@ -17,7 +17,7 @@ var config = null
 var torrentFileBuffer = null
 var torrentFile = null
 var delegator = null
-var available = []
+var available = {}
 var chunkStore = null
 
 loadConfig()
@@ -52,7 +52,10 @@ addEventListener('message', function (event) {
     resolvePromises()
     event.ports[0].postMessage({})
   } else if (event.data.type === 'available') {
-    available.push(event.source.id)
+    available[event.source.id] = true
+    assignDelegator()
+  } else if (event.data.type === 'unavailable') {
+    delete available[event.source.id]
     assignDelegator()
   } else {
     event.ports[0].postMessage({error: 'message type not supported'})
@@ -115,7 +118,7 @@ function loadConfig () {
 
 function assignDelegator () {
   this.clients.matchAll().then(clients => {
-    var potentials = clients.filter(c => available.indexOf(c.id) !== -1)
+    var potentials = clients.filter(c => c.id in available)
     var redelegate = !delegator || !potentials.find(c => c.id === delegator.id)
     if (redelegate && potentials.length > 0) {
       if (config.torrentId == null) throw new Error('cannot start download. torrentId unkown.')
