@@ -4,18 +4,21 @@ var WebTorrent = require('webtorrent')
 var BlobChunkStore = require('blob-chunk-store')
 var IdbBlobStore = require('idb-blob-store')
 
-function Planktos (opts) {
+function Planktos () {
   var self = this
-  if (!(self instanceof Planktos)) return new Planktos(opts)
-  if (!opts) opts = {}
+  if (!(self instanceof Planktos)) return new Planktos()
 
-  self.webtorrent = opts.webtorrent || new WebTorrent()
+  self.webtorrent = new WebTorrent()
 
-  self._registerSW(opts)
+  navigator.serviceWorker.addEventListener('message', function (event) {
+    self._onSwMessage(event)
+  })
 
   window.addEventListener('beforeunload', function () {
     sendSwRequest({type: 'unavailable'})
   })
+
+  sendSwRequest({type: 'available'})
 }
 
 Planktos.prototype._download = function (torrentId) {
@@ -43,32 +46,6 @@ Planktos.prototype._onSwMessage = function (event) {
   } else {
     throw new Error('Unknown type: ' + event.data.type)
   }
-}
-
-Planktos.prototype._registerSW = function (opts) {
-  var self = this
-  if (!('serviceWorker' in navigator)) return
-  var sw = opts.sw || '/sw.bundle.js'
-  var swOpts = { scope: opts.scope || '/' }
-
-  navigator.serviceWorker.addEventListener('message', function (event) {
-    self._onSwMessage(event)
-  })
-
-  sendSwRequest({type: 'available'})
-
-  navigator.serviceWorker.register(sw, swOpts).then(function (reg) {
-    if (reg.installing) {
-      console.log('Service worker installing')
-    } else if (reg.waiting) {
-      console.log('Service worker installed')
-    } else if (reg.active) {
-      sendSwRequest({type: 'available'})
-      console.log('Service worker active')
-    }
-  }).catch(function (err) {
-    console.log('Registration failed with ' + err)
-  })
 }
 
 function sendSwRequest (msg) {
