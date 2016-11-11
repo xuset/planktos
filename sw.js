@@ -37,11 +37,7 @@ addEventListener('fetch', function (event) {
   console.log('SW Fetch', 'clientId: ' + event.clientId, 'name: ' + name)
 
   if (event.clientId == null && search.indexOf('forceSW') === -1) {
-    var modUrl = new URL(url.toString())
-    modUrl.search = (url.search === '' ? '?' : url.search + '&') + 'forceSW'
-
-    var blob = new Blob([createBootstrap(modUrl.toString())], {type: 'text/html'})
-    return event.respondWith(new Response(blob))
+    return event.respondWith(createInjector(url))
   } else if (name in files) {
     return event.respondWith(getTorrentFile(name).then(b => new Response(b)))
   } else {
@@ -89,7 +85,8 @@ addEventListener('install', function (event) {
 
   var urls = [
     '/planktos.config.json',
-    '/root.torrent'
+    '/root.torrent',
+    '/injector.html'
   ]
   event.waitUntil(caches.open('planktosV1')
     .then((cache) => cache.addAll(urls))
@@ -158,26 +155,15 @@ function IdbChunkStore (chunkLength, infoHash) {
   return new BlobChunkStore(chunkLength, idb)
 }
 
-function createBootstrap (url) {
-  return `
-  <!doctype html>
-  <html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style type="text/css">
-      html {overflow: auto;}
-      html, body, div, iframe {margin: 0px; padding: 0px; height: 100%; border: none;}
-      iframe {display: block; width: 100%; border: none; overflow-y: auto; overflow-x: hidden;}
-    </style>
-    <script src="bundle.js"></script>
-    <script>
-      Planktos()
-    </script>
-  </head>
-  <body>
-    <iframe id="tree" name="tree" src="${url}" frameborder="0" marginheight="0" marginwidth="0" width="100%" height="100%" scrolling="auto"></iframe>
-  </body>
-  </html>
-  `
+function createInjector (url) {
+  var modUrl = new URL(url.toString())
+  modUrl.search = (url.search === '' ? '?' : url.search + '&') + 'forceSW'
+
+  return caches.open('planktosV1')
+  .then(cache => cache.match(new Request('/injector.html')))
+  .then(response => response.text())
+  .then(text => {
+    var blob = new Blob([text.replace('{{url}}', modUrl.toString())], {type: 'text/html'})
+    return new Response(blob)
+  })
 }

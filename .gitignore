@@ -5,3 +5,4 @@ build
 *.swp
 *bundle.js
 www/*.torrent
+www/injector.html
