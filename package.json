@@ -4,7 +4,10 @@
   "description": "building a p2p web",
   "main": "index.js",
   "dependencies": {
+    "chunk-store-stream": "^2.0.2",
     "idb-blob-store": "^1.2.0",
+    "parse-torrent-file": "^4.0.0",
+    "stream-to-blob": "^1.0.0",
     "webtorrent": "^0.97.2"
   },
   "devDependencies": {
@@ -13,15 +16,16 @@
   },
   "scripts": {
     "standard": "standard",
-    "bundle": "standard && browserify autostart.js -o bundle.js -s Planktos --debug",
+    "bundle": "standard && browserify autostart.js -o bundle.js -s Planktos --debug && browserify sw.js -o sw.bundle.js --debug",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "standard": {
     "ignore": [
       "planktos.config.js",
-      "bundle.js"
+      "*bundle.js"
     ],
     "globals": [
+      "self",
       "URL",
       "Response",
       "Request",

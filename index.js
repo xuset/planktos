@@ -21,7 +21,11 @@ Planktos.prototype._download = function (torrentId) {
     torrent.on('done', function () {
       console.log('Torrent download complete')
       for (var f of torrent.files) {
-        sendFileToSW(f)
+        var message = {
+          type: 'file',
+          name: f.name
+        }
+        sendSwRequest(message)
       }
     })
   })
@@ -40,7 +44,7 @@ Planktos.prototype._onSwMessage = function (event) {
 Planktos.prototype._registerSW = function (opts) {
   var self = this
   if (!('serviceWorker' in navigator)) return
-  var sw = opts.sw || '/sw.js'
+  var sw = opts.sw || '/sw.bundle.js'
   var swOpts = { scope: opts.scope || '/' }
 
   navigator.serviceWorker.addEventListener('message', function (event) {
@@ -60,21 +64,6 @@ Planktos.prototype._registerSW = function (opts) {
     }
   }).catch(function (err) {
     console.log('Registration failed with ' + err)
-  })
-}
-
-function sendFileToSW (file) {
-  file.getBlob(function (err, blob) {
-    if (err) throw err
-    if (navigator.serviceWorker.controller != null) {
-      var message = {
-        type: 'file',
-        name: file.name,
-        blob: blob
-      }
-      console.log('Sent ' + file.name + ' to service worker')
-      sendSwRequest(message)
-    }
   })
 }
 

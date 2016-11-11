@@ -3,5 +3,5 @@ npm-debug.log
 typings
 build
 *.swp
-bundle.js
+*bundle.js
 www
