@@ -5,6 +5,8 @@
 delete self.FileReaderSync
 self.window = self // eslint-disable-line
 
+require('debug').enable('planktos:*')
+var debug = require('debug')('planktos:sw')
 var ChunkStream = require('chunk-store-stream')
 var toBlob = require('stream-to-blob')
 var parseTorrent = require('parse-torrent-file')
@@ -34,7 +36,7 @@ addEventListener('fetch', function (event) {
 
   assignDelegator()
 
-  console.log('SW Fetch', 'clientId: ' + event.clientId, 'name: ' + name)
+  debug('FETCH', 'clientId=' + event.clientId, 'url=' + name)
 
   if (event.clientId == null && search.indexOf('forceSW') === -1) {
     return event.respondWith(createInjector(url))
@@ -48,7 +50,7 @@ addEventListener('fetch', function (event) {
 })
 
 addEventListener('message', function (event) {
-  console.log('SW Received: ' + event.data.type, event.data)
+  debug('MESSAGE', JSON.stringify(event.data))
   if (event.data.type === 'file') {
     files[event.data.name] = true
     resolvePromises()
@@ -67,7 +69,6 @@ addEventListener('message', function (event) {
 function resolvePromises () {
   for (var name in files) {
     if (name in filePromises) {
-      console.log('RESOLVED ' + name)
       var promise = filePromises[name]
       delete filePromises[name]
       getTorrentFile(name)
@@ -77,11 +78,11 @@ function resolvePromises () {
 }
 
 addEventListener('activate', function (event) {
-  console.log('SW activate EVENT', event)
+  debug('ACTIVATE')
 })
 
 addEventListener('install', function (event) {
-  console.log('SW INSTALL EVENT', event)
+  debug('INSTALL')
 
   var urls = [
     '/planktos.config.json',
@@ -112,7 +113,7 @@ function loadConfig () {
         torrentFileBuffer = arrayBuffer || torrentFileBuffer
         torrentFile = parseTorrent(new Buffer(torrentFileBuffer))
         chunkStore = new IdbChunkStore(torrentFile.pieceLength, torrentFile.infoHash)
-        console.log('TORRENT', torrentFile)
+        debug('TORRENT META', torrentFile)
       }
       return torrentFile
     })

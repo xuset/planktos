@@ -1,5 +1,7 @@
 module.exports = Planktos
 
+require('debug').enable('planktos:*')
+var debug = require('debug')('planktos:delegate')
 var WebTorrent = require('webtorrent')
 var BlobChunkStore = require('blob-chunk-store')
 var IdbBlobStore = require('idb-blob-store')
@@ -26,7 +28,7 @@ Planktos.prototype._download = function (torrentId) {
   var opts = {store: IdbChunkStore}
   self.webtorrent.add(torrentId, opts, function (torrent) {
     torrent.on('done', function () {
-      console.log('Torrent download complete')
+      debug('TORRENT DOWNLOADED', torrent.files.map(f => f.name))
       for (var f of torrent.files) {
         var message = {
           type: 'file',
@@ -40,7 +42,7 @@ Planktos.prototype._download = function (torrentId) {
 
 Planktos.prototype._onSwMessage = function (event) {
   var self = this
-  console.log('Received sw message', event.data)
+  debug('MESSAGE', JSON.stringify(event.data))
   if (event.data.type === 'download') {
     self._download(event.data.torrentId)
   } else {
@@ -53,10 +55,9 @@ function sendSwRequest (msg) {
     if (!('serviceWorker' in navigator)) return reject(new Error('SW not supported'))
     if (!navigator.serviceWorker.controller) return reject(new Error('SW not active'))
 
-    console.log('Sending request', msg)
     var channel = new MessageChannel()
     channel.port1.onmessage = function (event) {
-      console.log('Received response', event.data)
+      debug('MESSAGE', JSON.stringify(event.data))
       resolve(event.data)
     }
     navigator.serviceWorker.controller.postMessage(msg, [channel.port2])

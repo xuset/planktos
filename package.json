@@ -5,6 +5,7 @@
   "main": "index.js",
   "dependencies": {
     "chunk-store-stream": "^2.0.2",
+    "debug": "^2.3.2",
     "idb-blob-store": "^1.2.0",
     "parse-torrent-file": "^4.0.0",
     "stream-to-blob": "^1.0.0",
