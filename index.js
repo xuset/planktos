@@ -17,10 +17,10 @@ function Planktos () {
   })
 
   window.addEventListener('beforeunload', function () {
-    sendSwRequest({type: 'unavailable'})
+    navigator.serviceWorker.controller.postMessage({type: 'unavailable'})
   })
 
-  sendSwRequest({type: 'available'})
+  navigator.serviceWorker.controller.postMessage({type: 'available'})
 }
 
 Planktos.prototype._download = function (torrentId) {
@@ -34,7 +34,7 @@ Planktos.prototype._download = function (torrentId) {
           type: 'file',
           name: f.name
         }
-        sendSwRequest(message)
+        navigator.serviceWorker.controller.postMessage(message)
       }
     })
   })
@@ -48,20 +48,6 @@ Planktos.prototype._onSwMessage = function (event) {
   } else {
     throw new Error('Unknown type: ' + event.data.type)
   }
-}
-
-function sendSwRequest (msg) {
-  return new Promise(function (resolve, reject) {
-    if (!('serviceWorker' in navigator)) return reject(new Error('SW not supported'))
-    if (!navigator.serviceWorker.controller) return reject(new Error('SW not active'))
-
-    var channel = new MessageChannel()
-    channel.port1.onmessage = function (event) {
-      debug('MESSAGE', JSON.stringify(event.data))
-      resolve(event.data)
-    }
-    navigator.serviceWorker.controller.postMessage(msg, [channel.port2])
-  })
 }
 
 function IdbChunkStore (chunkLength, opts) {

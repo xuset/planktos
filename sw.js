@@ -54,7 +54,6 @@ addEventListener('message', function (event) {
   if (event.data.type === 'file') {
     files[event.data.name] = true
     resolvePromises()
-    event.ports[0].postMessage({})
   } else if (event.data.type === 'available') {
     available[event.source.id] = true
     assignDelegator()
@@ -62,7 +61,7 @@ addEventListener('message', function (event) {
     delete available[event.source.id]
     assignDelegator()
   } else {
-    event.ports[0].postMessage({error: 'message type not supported'})
+    throw new Error('Unsupported message type')
   }
 })
 
