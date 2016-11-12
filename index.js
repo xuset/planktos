@@ -42,9 +42,9 @@ Planktos.prototype._download = function (torrentId) {
 
 Planktos.prototype._onSwMessage = function (event) {
   var self = this
-  debug('MESSAGE', JSON.stringify(event.data))
+  debug('MESSAGE', event.data)
   if (event.data.type === 'download') {
-    self._download(event.data.torrentId)
+    self._download(new Buffer(event.data.torrentId))
   } else {
     throw new Error('Unknown type: ' + event.data.type)
   }
