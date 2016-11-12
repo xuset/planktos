@@ -96,13 +96,27 @@ function loadTorrentMeta () {
   .then(cache => cache.match(new Request('/root.torrent')))
   .then(response => response ? response.arrayBuffer() : null)
   .then(arrayBuffer => {
-    if (arrayBuffer) {
-      torrentMetaBuffer = new Buffer(arrayBuffer || torrentMetaBuffer)
-      torrentMeta = parseTorrent(torrentMetaBuffer)
-      chunkStore = new IdbChunkStore(torrentMeta.pieceLength, torrentMeta.infoHash)
-      debug('TORRENT META', torrentMeta)
+    if (!arrayBuffer) return
+    torrentMetaBuffer = new Buffer(arrayBuffer)
+    torrentMeta = parseTorrent(torrentMetaBuffer)
+    chunkStore = new IdbChunkStore(torrentMeta.pieceLength, torrentMeta.infoHash)
+    for (var f of torrentMeta.files) {
+      validateFile(f.name)
     }
+    debug('TORRENT META', torrentMeta)
     return torrentMeta
+  })
+}
+
+function validateFile (fname) {
+  getTorrentFile(fname)
+  .then(() => {
+    debug('VALIDATE', 'file=' + fname, 'success=true')
+    files[fname] = true
+    resolvePromises()
+  })
+  .catch(() => {
+    debug('VALIDATE', 'file=' + fname, 'success=false')
   })
 }
 
@@ -111,6 +125,7 @@ function assignDelegator () {
     var potentials = clients.filter(c => c.id in available)
     var redelegate = !delegator || !potentials.find(c => c.id === delegator.id)
     if (redelegate && potentials.length > 0) {
+      debug('ASSIGN', 'old=' + (delegator ? delegator.id : null), 'new=' + potentials[0].id)
       delegator = potentials[0]
       var msg = {
         type: 'download',
@@ -121,7 +136,7 @@ function assignDelegator () {
   })
 }
 
-function getTorrentFile (fname, cb) {
+function getTorrentFile (fname) {
   return new Promise(function (resolve, reject) {
     var file = torrentMeta.files.find(f => f.name === fname)
     if (!file) return reject(new Error('File does not exist'))
@@ -129,9 +144,8 @@ function getTorrentFile (fname, cb) {
     var stream = ChunkStream.read(chunkStore, chunkStore.chunkLength, {length: torrentMeta.length})
 
     toBlob(stream, function (err, blob) {
-      blob = blob.slice(file.offset, file.offset + file.length)
       if (err) reject(err)
-      else resolve(blob)
+      else resolve(blob.slice(file.offset, file.offset + file.length))
     })
   })
 }
