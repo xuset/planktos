@@ -12,6 +12,7 @@ var toBlob = require('stream-to-blob')
 var parseTorrent = require('parse-torrent-file')
 var IdbBlobStore = require('idb-blob-store')
 var BlobChunkStore = require('blob-chunk-store')
+var LRU = require('lru-cache')
 
 var filePromises = {}
 var files = {}
@@ -20,6 +21,10 @@ var torrentMeta = null
 var delegator = null
 var available = {}
 var chunkStore = null
+var fileCache = new LRU({
+  max: 10 * 1024 * 1024,
+  length: function (blob) { return blob.size }
+})
 
 if (!torrentMeta) loadTorrentMeta()
 if (!delegator) assignDelegator()
@@ -142,6 +147,9 @@ function assignDelegator () {
 }
 
 function getTorrentFile (fname) {
+  var cached = fileCache.get(fname)
+  if (cached) return Promise.resolve(cached)
+
   return new Promise(function (resolve, reject) {
     var file = torrentMeta.files.find(f => f.name === fname)
     if (!file) return reject(new Error('File does not exist'))
@@ -149,8 +157,10 @@ function getTorrentFile (fname) {
     var stream = ChunkStream.read(chunkStore, chunkStore.chunkLength, {length: torrentMeta.length})
 
     toBlob(stream, function (err, blob) {
-      if (err) reject(err)
-      else resolve(blob.slice(file.offset, file.offset + file.length))
+      if (err) return reject(err)
+      blob = blob.slice(file.offset, file.offset + file.length)
+      fileCache.set(fname, blob)
+      resolve(blob)
     })
   })
 }
