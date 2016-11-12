@@ -43,7 +43,8 @@ addEventListener('fetch', function (event) {
     return event.respondWith(getTorrentFile(name).then(b => new Response(b)))
   } else {
     event.respondWith(new Promise(function (resolve) {
-      filePromises[name] = resolve
+      if (!filePromises[name]) filePromises[name] = []
+      filePromises[name].push(resolve)
     }))
   }
 })
@@ -67,10 +68,14 @@ addEventListener('message', function (event) {
 function resolvePromises () {
   for (var name in files) {
     if (name in filePromises) {
-      var promise = filePromises[name]
+      var promises = filePromises[name]
       delete filePromises[name]
       getTorrentFile(name)
-      .then(b => promise(new Response(b)))
+      .then(b => {
+        for (var p of promises) {
+          p(new Response(b))
+        }
+      })
     }
   }
 }
@@ -163,7 +168,7 @@ function createInjector (url) {
   .then(cache => cache.match(new Request('/injector.html')))
   .then(response => response.text())
   .then(text => {
-    var blob = new Blob([text.replace('{{url}}', modUrl.toString())], {type: 'text/html'})
+    var blob = new Blob([text.replace(/{{url}}/g, modUrl.toString())], {type: 'text/html'})
     return new Response(blob)
   })
 }
