@@ -6,3 +6,4 @@ build
 *bundle.js
 www/*.torrent
 www/injector.html
+www/torrent

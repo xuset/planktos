@@ -5,10 +5,13 @@
   "main": "index.js",
   "dependencies": {
     "chunk-store-stream": "^2.0.2",
+    "create-torrent": "^3.25.1",
     "debug": "^2.3.2",
     "idb-blob-store": "^1.2.0",
     "lru-cache": "^4.0.1",
+    "minimist": "^1.2.0",
     "parse-torrent-file": "^4.0.0",
+    "run-parallel-limit": "^1.0.3",
     "stream-to-blob": "^1.0.0",
     "webtorrent": "^0.97.2"
   },
