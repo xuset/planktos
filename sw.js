@@ -18,6 +18,7 @@ var filePromises = {}
 var files = {}
 var torrentMetaBuffer = null
 var torrentMeta = null
+var manifest = null
 var delegator = null
 var available = {}
 var chunkStore = null
@@ -36,7 +37,7 @@ addEventListener('fetch', function (event) {
 
   if (url.host !== location.host) return
   if (name === '') name = 'index.html'
-  if (torrentMeta.files.find(f => f.name === name) == null) return
+  if (!(name in manifest)) return
 
   assignDelegator()
 
@@ -57,7 +58,9 @@ addEventListener('fetch', function (event) {
 addEventListener('message', function (event) {
   debug('MESSAGE', event.data)
   if (event.data.type === 'file') {
-    files[event.data.name] = true
+    var givenName = Object.keys(manifest).find(name => manifest[name] === event.data.name)
+    if (!givenName) throw new Error('File not found: ' + event.data.name)
+    files[givenName] = true
     resolvePromises()
   } else if (event.data.type === 'available') {
     available[event.source.id] = true
@@ -94,6 +97,7 @@ addEventListener('install', function (event) {
 
   var urls = [
     '/root.torrent',
+    '/planktos.manifest.json',
     '/injector.html'
   ]
   event.waitUntil(caches.open('planktosV1')
@@ -102,20 +106,32 @@ addEventListener('install', function (event) {
 })
 
 function loadTorrentMeta () {
-  return caches.open('planktosV1')
-  .then(cache => cache.match(new Request('/root.torrent')))
+  var cache = caches.open('planktosV1')
+
+  var torrentPromise = cache.then(cache => cache.match(new Request('/root.torrent')))
   .then(response => response ? response.arrayBuffer() : null)
   .then(arrayBuffer => {
     if (!arrayBuffer) return
     torrentMetaBuffer = new Buffer(arrayBuffer)
     torrentMeta = parseTorrent(torrentMetaBuffer)
+
     chunkStore = new IdbChunkStore(torrentMeta.pieceLength, torrentMeta.infoHash)
-    for (var f of torrentMeta.files) {
-      validateFile(f.name)
+    for (var f in manifest) {
+      validateFile(f)
     }
     debug('TORRENT META', torrentMeta)
     return torrentMeta
   })
+
+  var manifestPromise = cache.then(cache => cache.match(new Request('/planktos.manifest.json')))
+  .then(response => response ? response.json() : null)
+  .then(json => {
+    manifest = json || manifest
+    console.log('MANIFEST', manifest)
+    return manifest
+  })
+
+  return Promise.all([torrentPromise, manifestPromise])
 }
 
 function validateFile (fname) {
@@ -151,7 +167,9 @@ function getTorrentFile (fname) {
   if (cached) return Promise.resolve(cached)
 
   return new Promise(function (resolve, reject) {
-    var file = torrentMeta.files.find(f => f.name === fname)
+    var hashName = manifest[fname]
+    if (!hashName) return reject(new Error('File does not exist'))
+    var file = torrentMeta.files.find(f => f.name === hashName)
     if (!file) return reject(new Error('File does not exist'))
 
     var stream = ChunkStream.read(chunkStore, chunkStore.chunkLength, {length: torrentMeta.length})

@@ -7,3 +7,4 @@ build
 www/*.torrent
 www/injector.html
 www/torrent
+www/planktos.manifest.json
