@@ -1,40 +1,63 @@
+#!/usr/bin/env node
 'use strict'
 
-let fs = require('fs')
-let path = require('path')
-let parallelLimit = require('run-parallel-limit')
-let crypto = require('crypto')
-let createTorrent = require('create-torrent')
-let argv = require('minimist')(process.argv.slice(2))
+module.exports = create
+
+var fs = require('fs')
+var path = require('path')
+var parallelLimit = require('run-parallel-limit')
+var crypto = require('crypto')
+var createTorrent = require('create-torrent')
+var minimist = require('minimist')
+
+function create (rootDir, includes, webseedUrls) {
+  rootDir = absPath(rootDir)
+  includes = includes.map(p => absPath(p))
+  var dstDir = rootDir + '/torrent'
+
+  copy(rootDir, includes, dstDir, function (err, mappings) {
+    if (err) throw err
+
+    var opts = {
+      urlList: webseedUrls
+    }
+
+    createTorrent(dstDir, opts, function (err, torrent) {
+      if (err) throw err
+      fs.writeFileSync(rootDir + '/root.torrent', torrent)
+      writeManifest(rootDir, dstDir, mappings)
+    })
+  })
+}
 
 function writeManifest (srcDir, dstDir, mappings) {
   var relMappings = {}
-  for (let map of mappings) {
+  for (var map of mappings) {
     relMappings[map.src.substr(srcDir.length + 1)] = map.dst.substr(dstDir.length + 1)
   }
-
+  // console.log('MANIFEST', mappings, relMappings)
   var buff = new Buffer(JSON.stringify(relMappings))
   fs.writeFileSync(srcDir + '/planktos.manifest.json', buff)
 }
 
 function copy (rootDir, srcList, dstDir, cb) {
   if (!fs.existsSync(dstDir)) fs.mkdirSync(dstDir)
-  let files = []
+  var files = []
 
-  for (let item of srcList) {
-    let ignore = [dstDir, item + '/root.torrent']
+  for (var item of srcList) {
+    var ignore = [dstDir, item + '/root.torrent']
     walk(item, ignore, files) // populates files
   }
 
-  let tasks = files.map(fname => {
+  var tasks = files.map(fname => {
     return function (cc) { copyFile(fname, dstDir, cc) }
   })
   parallelLimit(tasks, 2, cb)
 }
 
 function getHash (src, cb) {
-  let hash = crypto.createHash('sha1')
-  let stream = fs.createReadStream(src)
+  var hash = crypto.createHash('sha1')
+  var stream = fs.createReadStream(src)
 
   stream.on('error', function (err) {
     cb(err)
@@ -52,11 +75,12 @@ function getHash (src, cb) {
 function copyFile (srcFile, dstDir, cb) {
   getHash(srcFile, function (err, hash) {
     if (err) return cb(err)
-    let dstFile = dstDir + '/' + hash
+    var dstFile = dstDir + '/' + hash
     console.log('COPY', srcFile, '->', dstFile)
-    let read = fs.createReadStream(srcFile)
-    let write = fs.createWriteStream(dstFile, {flags: 'wx'})
-    let result = {src: srcFile, dst: dstFile}
+    var result = {src: srcFile, dst: dstFile}
+    // return setTimeout(cb, 0, null, result)
+    var read = fs.createReadStream(srcFile)
+    var write = fs.createWriteStream(dstFile, {flags: 'wx'})
 
     read.on('error', function (err) {
       cb(err)
@@ -74,7 +98,7 @@ function copyFile (srcFile, dstDir, cb) {
 }
 
 function walk (dir, ignore, filelist) {
-  let files = []
+  var files = []
   filelist = filelist || []
   try {
     files = fs.readdirSync(dir)
@@ -83,8 +107,8 @@ function walk (dir, ignore, filelist) {
     else throw err
   }
 
-  for (let file of files) {
-    let name = dir + '/' + file
+  for (var file of files) {
+    var name = dir + '/' + file
     if (ignore.indexOf(name) !== -1) continue
     if (fs.statSync(name).isDirectory()) {
       walk(name, ignore, filelist)
@@ -95,30 +119,14 @@ function walk (dir, ignore, filelist) {
   return filelist
 }
 
-(function () {
-  let rootDir = argv.s || process.cwd()
-  let dstDir = argv.o || rootDir + '/torrent'
-  let includes = argv._
-  if (includes.length === 0) includes.push(rootDir)
-  let webseedUrls = argv.w
-  if (webseedUrls && !Array.isArray(webseedUrls)) webseedUrls = [ webseedUrls ]
-  if (!webseedUrls) webseedUrls = []
+function absPath (fpath) {
+  return path.isAbsolute(fpath) ? fpath : process.cwd() + '/' + fpath
+}
 
-  for (let i = 0; i < includes.length; i++) {
-    if (!path.isAbsolute(includes[i])) includes[i] = process.cwd() + '/' + includes[i]
-  }
-
-  copy(rootDir, includes, dstDir, function (err, mappings) {
-    if (err) throw err
-
-    let opts = {
-      urlList: webseedUrls
-    }
-
-    createTorrent(dstDir, opts, function (err, torrent) {
-      if (err) throw err
-      fs.writeFileSync(rootDir + '/root.torrent', torrent)
-      writeManifest(rootDir, dstDir, mappings)
-    })
-  })
-})()
+if (require.main === module) {
+  var argv = minimist(process.argv.slice(2))
+  var rootDir = argv.s || process.cwd()
+  var includes = argv['_'].length === 0 ? [rootDir] : argv['_']
+  var webseedUrls = argv.w
+  create(rootDir, includes, webseedUrls)
+}
