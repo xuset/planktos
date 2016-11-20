@@ -54,7 +54,7 @@ function copyAsHash (rootDir, srcList, dstDir, cb) {
   var files = []
 
   for (var item of srcList) {
-    var ignore = [dstDir, item + '/root.torrent']
+    var ignore = [dstDir]
     walk(item, ignore, files) // populates files
   }
 

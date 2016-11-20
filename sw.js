@@ -29,6 +29,14 @@ var fileCache = new LRU({
   length: function (blob) { return blob.size }
 })
 
+var preCached = [
+  '/planktos/root.torrent',
+  '/planktos/manifest.json',
+  '/planktos/injector.html',
+  '/planktos/injector.bundle.js',
+  '/planktos/index.js'
+]
+
 if (!torrentMeta) loadTorrentMeta()
 if (!delegator) assignDelegator()
 
@@ -39,13 +47,16 @@ global.addEventListener('fetch', function (event) {
 
   if (url.host !== global.location.host) return
   if (name === '') name = 'index.html'
-  if (!(name in manifest)) return
+  if (!(name in manifest) && preCached.indexOf('/' + name) === -1) return
 
   assignDelegator()
 
   debug('FETCH', 'clientId=' + event.clientId, 'url=' + name)
 
-  if (event.clientId == null && search.indexOf('forceSW') === -1) {
+  if (preCached.indexOf('/' + name) !== -1) {
+    return event.respondWith(global.caches.open('planktosV1')
+    .then(cache => cache.match(new Request('/' + name))))
+  } else if (event.clientId == null && search.indexOf('forceSW') === -1) {
     return event.respondWith(createInjector(url))
   } else if (name in files) {
     return event.respondWith(getTorrentFile(name).then(b => new Response(b)))
@@ -97,13 +108,8 @@ global.addEventListener('activate', function (event) {
 global.addEventListener('install', function (event) {
   debug('INSTALL')
 
-  var urls = [
-    '/planktos/root.torrent',
-    '/planktos/manifest.json',
-    '/planktos/injector.html'
-  ]
   event.waitUntil(global.caches.open('planktosV1')
-    .then((cache) => cache.addAll(urls))
+    .then((cache) => cache.addAll(preCached))
     .then(() => loadTorrentMeta()))
 })
 
