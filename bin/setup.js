@@ -1,7 +1,6 @@
 #!/usr/bin/env node
-'use strict'
 
-module.exports = create
+module.exports = setup
 
 var fs = require('fs')
 var path = require('path')
@@ -12,7 +11,7 @@ var minimist = require('minimist')
 
 var RESERVED_DIR = 'planktos'
 
-function create (rootDir, includes, webseedUrls) {
+function setup (rootDir, includes, webseedUrls) {
   rootDir = absPath(rootDir)
   includes = includes.map(p => absPath(p))
   var dstDir = rootDir + '/' + RESERVED_DIR
@@ -149,5 +148,9 @@ if (require.main === module) {
   var rootDir = argv.s || process.cwd()
   var includes = argv['_'].length === 0 ? [rootDir] : argv['_']
   var webseedUrls = argv.w
-  create(rootDir, includes, webseedUrls)
+  if (!webseedUrls) {
+    console.error('Must specify at least one web server using -w')
+    process.exit(1)
+  }
+  setup(rootDir, includes, webseedUrls)
 }
