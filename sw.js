@@ -14,11 +14,10 @@ var IdbBlobStore = require('idb-blob-store')
 var BlobChunkStore = require('blob-chunk-store')
 var LRU = require('lru-cache')
 
-var filePromises = {}
-var files = {}
-var torrentMetaBuffer = null
 var torrentMeta = null
 var manifest = null
+var filePromises = {}
+var files = {}
 var delegator = null
 var available = {}
 var chunkStore = null
@@ -35,10 +34,15 @@ var preCached = [
   '/planktos/index.js'
 ]
 
+global.addEventListener('message', onMessage)
+global.addEventListener('fetch', onFetch)
+global.addEventListener('activate', onActivate)
+global.addEventListener('install', onInstall)
+
 if (!torrentMeta) loadTorrentMeta()
 if (!delegator) assignDelegator()
 
-global.addEventListener('fetch', function (event) {
+function onFetch (event) {
   var url = new URL(event.request.url)
   var name = url.pathname.substr(1)
   var search = url.search.substr(1).split('&')
@@ -64,9 +68,9 @@ global.addEventListener('fetch', function (event) {
       filePromises[name].push(resolve)
     }))
   }
-})
+}
 
-global.addEventListener('message', function (event) {
+function onMessage (event) {
   debug('MESSAGE', event.data)
   if (event.data.type === 'file') {
     var givenName = Object.keys(manifest).find(name => manifest[name] === event.data.name)
@@ -82,7 +86,19 @@ global.addEventListener('message', function (event) {
   } else {
     throw new Error('Unsupported message type')
   }
-})
+}
+
+function onActivate () {
+  debug('ACTIVATE')
+}
+
+function onInstall (event) {
+  debug('INSTALL')
+
+  event.waitUntil(global.caches.open('planktosV1')
+    .then((cache) => cache.addAll(preCached))
+    .then(() => loadTorrentMeta()))
+}
 
 function resolvePromises () {
   for (var name in files) {
@@ -99,18 +115,6 @@ function resolvePromises () {
   }
 }
 
-global.addEventListener('activate', function (event) {
-  debug('ACTIVATE')
-})
-
-global.addEventListener('install', function (event) {
-  debug('INSTALL')
-
-  event.waitUntil(global.caches.open('planktosV1')
-    .then((cache) => cache.addAll(preCached))
-    .then(() => loadTorrentMeta()))
-})
-
 function loadTorrentMeta () {
   var cache = global.caches.open('planktosV1')
 
@@ -118,8 +122,7 @@ function loadTorrentMeta () {
   .then(response => response ? response.arrayBuffer() : null)
   .then(arrayBuffer => {
     if (!arrayBuffer) return
-    torrentMetaBuffer = new Buffer(arrayBuffer)
-    torrentMeta = parseTorrent(torrentMetaBuffer)
+    torrentMeta = parseTorrent(new Buffer(arrayBuffer))
 
     chunkStore = new IdbChunkStore(torrentMeta.pieceLength, torrentMeta.infoHash)
     for (var f in manifest) {
@@ -161,7 +164,7 @@ function assignDelegator () {
       delegator = potentials[0]
       var msg = {
         type: 'download',
-        torrentId: torrentMetaBuffer
+        torrentId: parseTorrent.encode(torrentMeta)
       }
       delegator.postMessage(msg)
     }
