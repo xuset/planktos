@@ -10,21 +10,31 @@ var crypto = require('crypto')
 var createTorrent = require('create-torrent')
 var minimist = require('minimist')
 
+var RESERVED_DIR = 'planktos'
+
 function create (rootDir, includes, webseedUrls) {
   rootDir = absPath(rootDir)
   includes = includes.map(p => absPath(p))
-  var dstDir = rootDir + '/torrent'
+  var dstDir = rootDir + '/' + RESERVED_DIR
 
-  copy(rootDir, includes, dstDir, function (err, mappings) {
+  if (!fs.existsSync(dstDir)) fs.mkdirSync(dstDir)
+
+  copyAsHash(rootDir, includes, dstDir, function (err, mappings) {
     if (err) throw err
 
     var opts = {
-      urlList: webseedUrls
+      urlList: webseedUrls,
+      name: RESERVED_DIR
     }
 
-    createTorrent(dstDir, opts, function (err, torrent) {
+    var torrentFiles = mappings.map(e => e.dst)
+    createTorrent(torrentFiles, opts, function (err, torrent) {
       if (err) throw err
-      fs.writeFileSync(rootDir + '/root.torrent', torrent)
+
+      copyFile(path.join(__dirname, 'injector.html'), path.join(dstDir, 'injector.html'))
+      copyFile(path.join(__dirname, 'injector.bundle.js'), path.join(dstDir, 'injector.bundle.js'))
+      copyFile(path.join(__dirname, 'sw.bundle.js'), path.join(rootDir, 'sw.bundle.js'))
+      fs.writeFileSync(dstDir + '/root.torrent', torrent)
       writeManifest(rootDir, dstDir, mappings)
     })
   })
@@ -37,11 +47,10 @@ function writeManifest (srcDir, dstDir, mappings) {
   }
   // console.log('MANIFEST', mappings, relMappings)
   var buff = new Buffer(JSON.stringify(relMappings))
-  fs.writeFileSync(srcDir + '/planktos.manifest.json', buff)
+  fs.writeFileSync(dstDir + '/manifest.json', buff)
 }
 
-function copy (rootDir, srcList, dstDir, cb) {
-  if (!fs.existsSync(dstDir)) fs.mkdirSync(dstDir)
+function copyAsHash (rootDir, srcList, dstDir, cb) {
   var files = []
 
   for (var item of srcList) {
@@ -50,7 +59,7 @@ function copy (rootDir, srcList, dstDir, cb) {
   }
 
   var tasks = files.map(fname => {
-    return function (cc) { copyFile(fname, dstDir, cc) }
+    return function (cc) { copyFileAsHash(fname, dstDir, cc) }
   })
   parallelLimit(tasks, 2, cb)
 }
@@ -72,29 +81,37 @@ function getHash (src, cb) {
   })
 }
 
-function copyFile (srcFile, dstDir, cb) {
+function copyFileAsHash (srcFile, dstDir, cb) {
   getHash(srcFile, function (err, hash) {
     if (err) return cb(err)
     var dstFile = dstDir + '/' + hash
-    console.log('COPY', srcFile, '->', dstFile)
-    var result = {src: srcFile, dst: dstFile}
-    // return setTimeout(cb, 0, null, result)
-    var read = fs.createReadStream(srcFile)
-    var write = fs.createWriteStream(dstFile, {flags: 'wx'})
-
-    read.on('error', function (err) {
-      cb(err)
+    copyFile(srcFile, dstFile, 'wx', function (err) {
+      if (err) cb(err)
+      else cb(null, {src: srcFile, dst: dstFile})
     })
-    read.on('end', function () {
-      cb(null, result)
-    })
-    write.on('error', function (err) {
-      if (err.errno === -17) cb(null, result) // EEXIST: file already exists
-      else cb(err)
-    })
-
-    read.pipe(write)
   })
+}
+
+function copyFile (srcFile, dstFile, flags, cb) {
+  if (typeof flags === 'function') return copyFile(srcFile, dstFile, null, flags)
+  if (!cb) cb = noop
+  var read = fs.createReadStream(srcFile)
+  var write = fs.createWriteStream(dstFile, {flags: flags})
+
+  console.log('COPY', srcFile, '->', dstFile)
+
+  read.on('error', function (err) {
+    cb(err)
+  })
+  read.on('end', function () {
+    cb(null)
+  })
+  write.on('error', function (err) {
+    if (err.errno === -17) cb(null) // EEXIST: file already exists
+    else cb(err)
+  })
+
+  read.pipe(write)
 }
 
 function walk (dir, ignore, filelist) {
@@ -121,6 +138,10 @@ function walk (dir, ignore, filelist) {
 
 function absPath (fpath) {
   return path.isAbsolute(fpath) ? fpath : process.cwd() + '/' + fpath
+}
+
+function noop () {
+  // does nothing
 }
 
 if (require.main === module) {

@@ -5,6 +5,8 @@
 delete self.FileReaderSync
 self.window = self // eslint-disable-line
 
+// TODO convert Request(url) => url
+
 require('debug').enable('planktos:*')
 var debug = require('debug')('planktos:sw')
 var ChunkStream = require('chunk-store-stream')
@@ -96,9 +98,9 @@ addEventListener('install', function (event) {
   debug('INSTALL')
 
   var urls = [
-    '/root.torrent',
-    '/planktos.manifest.json',
-    '/injector.html'
+    '/planktos/root.torrent',
+    '/planktos/manifest.json',
+    '/planktos/injector.html'
   ]
   event.waitUntil(caches.open('planktosV1')
     .then((cache) => cache.addAll(urls))
@@ -108,7 +110,7 @@ addEventListener('install', function (event) {
 function loadTorrentMeta () {
   var cache = caches.open('planktosV1')
 
-  var torrentPromise = cache.then(cache => cache.match(new Request('/root.torrent')))
+  var torrentPromise = cache.then(cache => cache.match(new Request('/planktos/root.torrent')))
   .then(response => response ? response.arrayBuffer() : null)
   .then(arrayBuffer => {
     if (!arrayBuffer) return
@@ -123,7 +125,7 @@ function loadTorrentMeta () {
     return torrentMeta
   })
 
-  var manifestPromise = cache.then(cache => cache.match(new Request('/planktos.manifest.json')))
+  var manifestPromise = cache.then(cache => cache.match(new Request('/planktos/manifest.json')))
   .then(response => response ? response.json() : null)
   .then(json => {
     manifest = json || manifest
@@ -193,7 +195,7 @@ function createInjector (url) {
   modUrl.search = (url.search === '' ? '?' : url.search + '&') + 'forceSW'
 
   return caches.open('planktosV1')
-  .then(cache => cache.match(new Request('/injector.html')))
+  .then(cache => cache.match(new Request('/planktos/injector.html')))
   .then(response => response.text())
   .then(text => {
     var blob = new Blob([text.replace(/{{url}}/g, modUrl.toString())], {type: 'text/html'})

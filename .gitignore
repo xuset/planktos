@@ -1,10 +1,6 @@
 node_modules
 npm-debug.log
-typings
-build
 *.swp
 *bundle.js
-www/*.torrent
-www/injector.html
-www/torrent
-www/planktos.manifest.json
+www/sw.bundle.js
+www/planktos
