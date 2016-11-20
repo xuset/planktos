@@ -3,7 +3,7 @@
  * see: https://github.com/srijs/rusha/issues/39
  */
 delete self.FileReaderSync
-self.window = self // eslint-disable-line
+self.global = self.window = self // eslint-disable-line
 
 // TODO convert Request(url) => url
 
@@ -32,12 +32,12 @@ var fileCache = new LRU({
 if (!torrentMeta) loadTorrentMeta()
 if (!delegator) assignDelegator()
 
-addEventListener('fetch', function (event) {
+global.addEventListener('fetch', function (event) {
   var url = new URL(event.request.url)
   var name = url.pathname.substr(1)
   var search = url.search.substr(1).split('&')
 
-  if (url.host !== location.host) return
+  if (url.host !== global.location.host) return
   if (name === '') name = 'index.html'
   if (!(name in manifest)) return
 
@@ -57,7 +57,7 @@ addEventListener('fetch', function (event) {
   }
 })
 
-addEventListener('message', function (event) {
+global.addEventListener('message', function (event) {
   debug('MESSAGE', event.data)
   if (event.data.type === 'file') {
     var givenName = Object.keys(manifest).find(name => manifest[name] === event.data.name)
@@ -90,11 +90,11 @@ function resolvePromises () {
   }
 }
 
-addEventListener('activate', function (event) {
+global.addEventListener('activate', function (event) {
   debug('ACTIVATE')
 })
 
-addEventListener('install', function (event) {
+global.addEventListener('install', function (event) {
   debug('INSTALL')
 
   var urls = [
@@ -102,13 +102,13 @@ addEventListener('install', function (event) {
     '/planktos/manifest.json',
     '/planktos/injector.html'
   ]
-  event.waitUntil(caches.open('planktosV1')
+  event.waitUntil(global.caches.open('planktosV1')
     .then((cache) => cache.addAll(urls))
     .then(() => loadTorrentMeta()))
 })
 
 function loadTorrentMeta () {
-  var cache = caches.open('planktosV1')
+  var cache = global.caches.open('planktosV1')
 
   var torrentPromise = cache.then(cache => cache.match(new Request('/planktos/root.torrent')))
   .then(response => response ? response.arrayBuffer() : null)
@@ -194,7 +194,7 @@ function createInjector (url) {
   var modUrl = new URL(url.toString())
   modUrl.search = (url.search === '' ? '?' : url.search + '&') + 'forceSW'
 
-  return caches.open('planktosV1')
+  return global.caches.open('planktosV1')
   .then(cache => cache.match(new Request('/planktos/injector.html')))
   .then(response => response.text())
   .then(text => {

@@ -14,7 +14,6 @@ if (!path.isAbsolute(root)) root = process.cwd() + '/' + root
 
 app.use(express.static(root))
 
-
 app.listen(port, function () {
   console.log('Serving', root, 'on port', port)
 })
