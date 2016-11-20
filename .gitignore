@@ -2,5 +2,5 @@ node_modules
 npm-debug.log
 *.swp
 *bundle.js
-www/planktos.sw.js
-www/planktos
+example/planktos.sw.js
+example/planktos
