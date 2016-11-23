@@ -126,9 +126,6 @@ function loadTorrentMeta () {
     torrentMeta = parseTorrent(new Buffer(arrayBuffer))
 
     chunkStore = new IdbChunkStore(torrentMeta.pieceLength, torrentMeta.infoHash)
-    for (var f in manifest) {
-      validateFile(f)
-    }
     debug('TORRENT META', torrentMeta)
     return torrentMeta
   })
@@ -138,6 +135,9 @@ function loadTorrentMeta () {
   .then(json => {
     manifest = json || manifest
     console.log('MANIFEST', manifest)
+    for (var f in manifest) {
+      validateFile(f)
+    }
     return manifest
   })
 
