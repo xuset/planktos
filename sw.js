@@ -47,6 +47,7 @@ function onFetch (event) {
   var name = url.pathname.substr(1)
   var search = url.search.substr(1).split('&')
 
+  if (manifest == null || torrentMeta == null) return // TODO handle case
   if (url.host !== global.location.host) return
   if (name === '') name = 'index.html'
   if (!(name in manifest) && preCached.indexOf('/' + name) === -1) return
