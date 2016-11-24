@@ -21,6 +21,7 @@ var files = {}
 var delegator = null
 var available = {}
 var chunkStore = null
+var startTime = (new Date()).getMilliseconds()
 var fileCache = new LRU({
   max: 10 * 1024 * 1024,
   length: function (blob) { return blob.size }
@@ -127,6 +128,7 @@ function loadTorrentMeta () {
 
     chunkStore = new IdbChunkStore(torrentMeta.pieceLength, torrentMeta.infoHash)
     debug('TORRENT META', torrentMeta)
+    debug('DELTA-TIME', (new Date()).getMilliseconds() - startTime)
     return torrentMeta
   })
 
@@ -135,6 +137,7 @@ function loadTorrentMeta () {
   .then(json => {
     manifest = json || manifest
     console.log('MANIFEST', manifest)
+    debug('DELTA-TIME', (new Date()).getMilliseconds() - startTime)
     for (var f in manifest) {
       validateFile(f)
     }
@@ -162,6 +165,7 @@ function assignDelegator () {
     var redelegate = !delegator || !potentials.find(c => c.id === delegator.id)
     if (redelegate && potentials.length > 0) {
       debug('ASSIGN', 'old=' + (delegator ? delegator.id : null), 'new=' + potentials[0].id)
+      if (delegator == null) debug('DELTA-TIME', (new Date()).getMilliseconds() - startTime)
       delegator = potentials[0]
       var msg = {
         type: 'download',
@@ -188,6 +192,8 @@ function getTorrentFile (fname) {
       if (err) return reject(err)
       blob = blob.slice(file.offset, file.offset + file.length)
       fileCache.set(fname, blob)
+      debug('FILE', fname)
+      debug('DELTA-TIME', (new Date()).getMilliseconds() - startTime)
       resolve(blob)
     })
   })
