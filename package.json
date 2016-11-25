@@ -5,17 +5,18 @@
   "main": "index.js",
   "bin": "./bin/setup.js",
   "dependencies": {
+    "blob-chunk-store": "git+https://github.com/xuset/blob-chunk-store",
     "chunk-store-stream": "^2.0.2",
     "create-torrent": "^3.25.1",
     "debug": "^2.3.2",
     "idb-blob-store": "^1.2.0",
+    "idb-kv-store": "^1.0.0",
     "lru-cache": "^4.0.1",
     "minimist": "^1.2.0",
     "parse-torrent-file": "^4.0.0",
     "run-parallel-limit": "^1.0.3",
     "stream-to-blob": "^1.0.0",
-    "webtorrent": "^0.97.2",
-    "blob-chunk-store": "git+https://github.com/xuset/blob-chunk-store"
+    "webtorrent": "^0.97.2"
   },
   "devDependencies": {
     "browserify": "^13.1.1",
@@ -30,7 +31,6 @@
   },
   "standard": {
     "globals": [
-      "self",
       "URL",
       "Response",
       "Request",
