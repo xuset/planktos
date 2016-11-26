@@ -4,6 +4,7 @@ var ChunkStream = require('chunk-store-stream')
 var toBlob = require('stream-to-blob')
 var IdbBlobStore = require('idb-blob-store')
 var BlobChunkStore = require('blob-chunk-store')
+var IdbKvStore = require('idb-kv-store')
 
 var global = self // eslint-disable-line
 
@@ -12,7 +13,7 @@ function BtFetch (persistent) {
   if (!(self instanceof BtFetch)) return new BtFetch(persistent)
   self._persistent = persistent
   self._waiting = {}
-  self._downloaded = {}
+  self._downloaded = new IdbKvStore('planktos-downloaded')
 
   global.addEventListener('message', onMessage)
 
@@ -32,14 +33,16 @@ BtFetch.prototype.fetch = function (filename) {
       return Promise.resolve(null)
     }
 
-    if (hash in self._downloaded) {
-      return self._getTorrentBlob(fileInfo.offset, fileInfo.length, torrentMeta)
-    }
-
-    // Defer until the file finishes downloading
-    return new Promise(function (resolve) {
-      if (!self._waiting[hash]) self._waiting[hash] = []
-      self._waiting[hash].push(resolve)
+    return self._downloaded.get(hash).then(downloaded => {
+      if (downloaded) {
+        return self._getTorrentBlob(fileInfo.offset, fileInfo.length, torrentMeta)
+      } else {
+        // Defer until the file finishes downloading
+        return new Promise(function (resolve) {
+          if (!self._waiting[hash]) self._waiting[hash] = []
+          self._waiting[hash].push(resolve)
+        })
+      }
     })
   })
 }
@@ -47,15 +50,19 @@ BtFetch.prototype.fetch = function (filename) {
 BtFetch.prototype._onMessage = function (event) {
   var self = this
   if (event.data.type === 'file') {
-    self._downloaded[event.data.name] = true
-    self._resolveWaiters()
+    self._downloaded.set(event.data.name, true)
+    .then(() => self._resolveWaiters())
   }
 }
 
 BtFetch.prototype._resolveWaiters = function () {
   var self = this
-  self._persistent.get('manifest').then(manifest => {
-    for (var hash in self._downloaded) {
+  return Promise.all([
+    self._persistent.get('manifest'),
+    self._downloaded.json()
+  ]).then(result => {
+    var [manifest, downloaded] = result
+    for (var hash in downloaded) {
       if (hash in self._waiting) {
         var filename = Object.keys(manifest).find(fname => manifest[fname] === hash)
         var waiters = self._waiting[hash]

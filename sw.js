@@ -12,7 +12,7 @@ var IdbKvStore = require('idb-kv-store')
 
 var BtFetch = require('./btfetch')
 
-var persistent = new IdbKvStore({ name: 'planktos' })
+var persistent = new IdbKvStore('planktos')
 var btfetch = new BtFetch(persistent)
 var delegator = null
 var available = {}
