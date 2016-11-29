@@ -1,9 +1,8 @@
 module.exports = BtFetch
 
 var ChunkStream = require('chunk-store-stream')
+var IdbChunkStore = require('indexdb-chunk-store')
 var toBlob = require('stream-to-blob')
-var IdbBlobStore = require('idb-blob-store')
-var BlobChunkStore = require('blob-chunk-store')
 var IdbKvStore = require('idb-kv-store')
 
 var global = self // eslint-disable-line
@@ -81,7 +80,7 @@ BtFetch.prototype._resolveWaiters = function () {
 BtFetch.prototype._getTorrentBlob = function (offset, length, torrentMeta) {
   var self = this
   if (!self._chunkStore) {
-    self._chunkStore = new IdbChunkStore(torrentMeta.pieceLength, torrentMeta.infoHash)
+    self._chunkStore = new IdbChunkStore(torrentMeta.pieceLength, {name: torrentMeta.infoHash})
   }
 
   var stream = ChunkStream.read(self._chunkStore, self._chunkStore.chunkLength, {
@@ -94,9 +93,4 @@ BtFetch.prototype._getTorrentBlob = function (offset, length, torrentMeta) {
       resolve(blob.slice(offset, offset + length))
     })
   })
-}
-
-function IdbChunkStore (chunkLength, infoHash) {
-  var idb = new IdbBlobStore({name: infoHash})
-  return new BlobChunkStore(chunkLength, idb)
 }

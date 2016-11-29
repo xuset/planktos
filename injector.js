@@ -3,8 +3,7 @@ module.exports = Planktos
 require('debug').enable('planktos:*')
 var debug = require('debug')('planktos:delegate')
 var WebTorrent = require('webtorrent')
-var BlobChunkStore = require('blob-chunk-store')
-var IdbBlobStore = require('idb-blob-store')
+var IdbChunkStore = require('indexdb-chunk-store')
 
 function Planktos () {
   var self = this
@@ -48,10 +47,4 @@ Planktos.prototype._onSwMessage = function (event) {
   } else {
     throw new Error('Unknown type: ' + event.data.type)
   }
-}
-
-function IdbChunkStore (chunkLength, opts) {
-  var namespace = opts.torrent.infoHash
-  var idb = new IdbBlobStore({name: namespace})
-  return new BlobChunkStore(chunkLength, idb)
 }
