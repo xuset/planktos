@@ -8,6 +8,7 @@
     "chunk-store-stream": "^2.0.2",
     "create-torrent": "^3.25.1",
     "debug": "^2.3.2",
+    "delegate-job": "git+https://github.com/xuset/delegate-job.git",
     "idb-kv-store": "^2.2.1",
     "indexdb-chunk-store": "^1.0.3",
     "minimist": "^1.2.0",

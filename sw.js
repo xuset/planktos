@@ -7,6 +7,7 @@ delete global.FileReaderSync
 
 require('debug').enable('planktos:*')
 var debug = require('debug')('planktos:sw')
+var delegate = require('delegate-job')
 var parseTorrent = require('parse-torrent-file')
 var IdbKvStore = require('idb-kv-store')
 
@@ -14,9 +15,8 @@ var BtFetch = require('./btfetch')
 
 var persistent = new IdbKvStore('planktos')
 var btfetch = new BtFetch(persistent)
-var delegator = null
-var available = {}
-var startTime = (new Date()).getMilliseconds()
+var downloadTorrent = delegate('planktos-download')
+var downloadJob = null
 
 var preCached = [
   '/planktos/root.torrent',
@@ -31,8 +31,6 @@ global.addEventListener('fetch', onFetch)
 global.addEventListener('activate', onActivate)
 global.addEventListener('install', onInstall)
 
-assignDelegator()
-
 function onFetch (event) {
   var url = new URL(event.request.url)
   var name = url.pathname.substr(1)
@@ -42,8 +40,6 @@ function onFetch (event) {
   if (preCached.indexOf('/' + name) === -1 && name.startsWith('planktos/')) return
   if (name === '') name = 'index.html'
 
-  assignDelegator()
-
   debug('FETCH', 'clientId=' + event.clientId, 'url=' + name)
 
   if (preCached.indexOf('/' + name) !== -1) {
@@ -52,6 +48,7 @@ function onFetch (event) {
   } else if (event.clientId == null && search.indexOf('forceSW') === -1) {
     return event.respondWith(createInjector(url))
   } else {
+    if (!downloadJob) startDownload()
     return event.respondWith(btfetch.fetch(name)
     .then(blob => {
       if (blob) return new Response(blob)
@@ -66,13 +63,6 @@ function onFetch (event) {
 
 function onMessage (event) {
   debug('MESSAGE', event.data)
-  if (event.data.type === 'available') {
-    available[event.source.id] = true
-    assignDelegator()
-  } else if (event.data.type === 'unavailable') {
-    delete available[event.source.id]
-    assignDelegator()
-  }
 }
 
 function onActivate () {
@@ -117,22 +107,11 @@ function onInstall (event) {
   ]))
 }
 
-function assignDelegator () {
-  this.clients.matchAll().then(clients => {
-    var potentials = clients.filter(c => c.id in available)
-    var redelegate = !delegator || !potentials.find(c => c.id === delegator.id)
-    if (redelegate && potentials.length > 0) {
-      debug('ASSIGN', 'old=' + (delegator ? delegator.id : null), 'new=' + potentials[0].id)
-      if (delegator == null) debug('DELTA-TIME', (new Date()).getMilliseconds() - startTime)
-      delegator = potentials[0]
-      persistent.get('torrentMetaBuffer').then(buffer => {
-        var msg = {
-          type: 'download',
-          torrentId: buffer
-        }
-        delegator.postMessage(msg)
-      })
-    }
+function startDownload () {
+  persistent.get('torrentMetaBuffer').then(buffer => {
+    downloadJob = downloadTorrent(buffer, function (err) {
+      if (err.assigned === false) startDownload()
+    })
   })
 }
 
