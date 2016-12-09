@@ -23,7 +23,7 @@ var preCached = [
   '/planktos/manifest.json',
   '/planktos/injector.html',
   '/planktos/injector.bundle.js',
-  '/planktos/index.js'
+  '/planktos/install.js'
 ]
 
 global.addEventListener('message', onMessage)
