@@ -21,8 +21,8 @@ var downloadJob = null
 var preCached = [
   '/planktos/root.torrent',
   '/planktos/manifest.json',
-  '/planktos/injector.html',
-  '/planktos/injector.bundle.js',
+  '/planktos/injection.html',
+  '/planktos/injection.bundle.js',
   '/planktos/install.js'
 ]
 
@@ -120,7 +120,7 @@ function createInjector (url) {
   modUrl.search = (url.search === '' ? '?' : url.search + '&') + 'forceSW'
 
   return global.caches.open('planktosV1')
-  .then(cache => cache.match('/planktos/injector.html'))
+  .then(cache => cache.match('/planktos/injection.html'))
   .then(response => response.text())
   .then(text => {
     var blob = new Blob([text.replace(/{{url}}/g, modUrl.toString())], {type: 'text/html'})
