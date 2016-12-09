@@ -8,6 +8,7 @@ var IdbChunkStore = require('indexdb-chunk-store')
 
 function Planktos () {
   var self = this
+  if (typeof BroadcastChannel === 'undefined') throw new Error('No BroadcastChannel support')
   if (!(self instanceof Planktos)) return new Planktos()
 
   self.webtorrent = new WebTorrent()
@@ -22,12 +23,13 @@ Planktos.prototype._download = function (torrentId) {
   self.webtorrent.add(torrentId, opts, function (torrent) {
     torrent.on('done', function () {
       debug('TORRENT DOWNLOADED', torrent.files.map(f => f.name))
+      var channel = new BroadcastChannel('planktos')
       for (var f of torrent.files) {
         var message = {
           type: 'file',
           name: f.name
         }
-        navigator.serviceWorker.controller.postMessage(message)
+        channel.postMessage(message)
       }
     })
   })

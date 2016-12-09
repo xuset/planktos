@@ -5,16 +5,16 @@ var IdbChunkStore = require('indexdb-chunk-store')
 var toBlob = require('stream-to-blob')
 var IdbKvStore = require('idb-kv-store')
 
-var global = self // eslint-disable-line
-
 function BtFetch (persistent) {
   var self = this
+  if (typeof BroadcastChannel === 'undefined') throw new Error('No BroadcastChannel support')
   if (!(self instanceof BtFetch)) return new BtFetch(persistent)
   self._persistent = persistent
   self._waiting = {}
   self._downloaded = new IdbKvStore('planktos-downloaded')
 
-  global.addEventListener('message', onMessage)
+  self._channel = new BroadcastChannel('planktos')
+  self._channel.addEventListener('message', onMessage)
 
   function onMessage (event) {
     self._onMessage(event)
