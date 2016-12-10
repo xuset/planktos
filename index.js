@@ -3,9 +3,6 @@ var global = typeof window !== 'undefined' ? window : self // eslint-disable-lin
 // Temp bug fix: https://github.com/srijs/rusha/issues/39
 if (global.WorkerGlobalScope) delete global.FileReaderSync
 
-// Temp bug fix: https://github.com/visionmedia/debug/pull/335
-if (!global.window) global.window = global
-
 var preCached = [
   '/planktos/root.torrent',
   '/planktos/manifest.json',
@@ -14,9 +11,10 @@ var preCached = [
   '/planktos/install.js'
 ]
 
+// TODO add getFileStream
 module.exports.getFileBlob = getFileBlob
 module.exports.update = update
-module.exports.preCached = preCached
+module.exports.preCached = preCached // TODO better way to handle preCached
 module.exports.getManifest = getManifest
 module.exports.getDownloaded = getDownloaded
 module.exports.getTorrentMeta = getTorrentMeta
@@ -32,8 +30,7 @@ var waitingFetches = {}
 var persistent = new IdbKvStore('planktos')
 var downloaded = new IdbKvStore('planktos-downloaded')
 var chunkStore = null
-var downloadChannel = new BroadcastChannel('planktos')
-downloadChannel.addEventListener('message', onDownload)
+var downloadChannel = null
 
 function getDownloaded () {
   return downloaded.json()
@@ -52,6 +49,13 @@ function getTorrentMetaBuffer () {
 }
 
 function getFileBlob (filename) {
+  if (typeof BroadcastChannel === 'undefined') throw new Error('No BroadcastChannel support')
+
+  if (!downloadChannel) {
+    downloadChannel = new BroadcastChannel('planktos')
+    downloadChannel.addEventListener('message', onDownload)
+  }
+
   return persistent.get(['manifest', 'torrentMeta']).then(result => {
     var [manifest, torrentMeta] = result
     var hash = manifest[filename]

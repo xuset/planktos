@@ -14,6 +14,8 @@ window.addEventListener('beforeunload', onBeforUnload)
 var webtorrent = new WebTorrent()
 var downloaded = new IdbKvStore('planktos-downloaded')
 
+// TODO check if controller is null
+// TODO listen for sw onchange event
 navigator.serviceWorker.controller.postMessage({type: 'available'})
 
 function onBeforUnload () {
