@@ -10,11 +10,9 @@ var debug = require('debug')('planktos:sw')
 var delegate = require('delegate-job')
 var parseTorrent = require('parse-torrent-file')
 var IdbKvStore = require('idb-kv-store')
-
-var BtFetch = require('./btfetch')
+var planktos = require('.')
 
 var persistent = new IdbKvStore('planktos')
-var btfetch = new BtFetch(persistent)
 var downloadTorrent = delegate('planktos-download')
 var downloadJob = null
 
@@ -49,7 +47,7 @@ function onFetch (event) {
     return event.respondWith(createInjector(url))
   } else {
     if (!downloadJob) startDownload()
-    return event.respondWith(btfetch.fetch(name)
+    return event.respondWith(planktos.getFileBlob(name)
     .then(blob => {
       if (blob) return new Response(blob)
       else return global.fetch(event.request)
