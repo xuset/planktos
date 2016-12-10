@@ -1,3 +1,10 @@
+var global = typeof window !== 'undefined' ? window : self // eslint-disable-line
+
+// Temp bug fix: https://github.com/srijs/rusha/issues/39
+if (global.WorkerGlobalScope) delete global.FileReaderSync
+
+// Temp bug fix: https://github.com/visionmedia/debug/pull/335
+if (!global.window) global.window = global
 
 var preCached = [
   '/planktos/root.torrent',
@@ -21,7 +28,6 @@ var IdbKvStore = require('idb-kv-store')
 var toBlob = require('stream-to-blob')
 var parseTorrent = require('parse-torrent-file')
 
-var global = typeof window !== 'undefined' ? window : self // eslint-disable-line
 var waitingFetches = {}
 var persistent = new IdbKvStore('planktos')
 var downloaded = new IdbKvStore('planktos-downloaded')

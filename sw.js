@@ -1,9 +1,4 @@
-
-/* Hack to prevent rusha from setting a event handler for 'message'
- * see: https://github.com/srijs/rusha/issues/39
- */
-self.global = self.window = self // eslint-disable-line
-delete global.FileReaderSync
+self.global = self // eslint-disable-line
 
 require('debug').enable('planktos:*')
 var debug = require('debug')('planktos:sw')
