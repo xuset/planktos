@@ -37,14 +37,14 @@ function getDownloaded () {
 }
 
 function getManifest () {
-  return persistent.get('torrentMeta')
+  return persistent.get('manifest')
 }
 
 function getTorrentMeta () {
   return persistent.get('torrentMeta')
 }
 
-function getTorrentMetaBuffer () {
+function getTorrentMetaBuffer () { // TODO Fix parsing bug so this can be removed
   return persistent.get('torrentMetaBuffer')
 }
 
@@ -52,7 +52,7 @@ function getFileBlob (filename) {
   if (typeof BroadcastChannel === 'undefined') throw new Error('No BroadcastChannel support')
 
   if (!downloadChannel) {
-    downloadChannel = new BroadcastChannel('planktos')
+    downloadChannel = new BroadcastChannel('planktos-downloaded')
     downloadChannel.addEventListener('message', onDownload)
   }
 
@@ -62,7 +62,7 @@ function getFileBlob (filename) {
     var fileInfo = torrentMeta.files.find(f => f.name === hash)
 
     if (!fileInfo) {
-      return Promise.resolve(null) // TODO actually reject promise
+      return Promise.reject(new Error('File not found'))
     }
 
     chunkStore = chunkStore || new IdbChunkStore(torrentMeta.pieceLength, {name: torrentMeta.infoHash})
@@ -92,14 +92,17 @@ function getFileBlob (filename) {
 function update () {
   var cachePromise = global.caches.open('planktos')
   .then((cache) => cache.addAll(preCached))
+  .then(() => global.caches.open('planktos'))
 
-  var manifestPromise = global.fetch('/planktos/manifest.json') // TODO use cache
+  var manifestPromise = cachePromise
+  .then(cache => cache.match('/planktos/manifest.json'))
   .then(response => response.json())
   .then(json => {
     return persistent.set('manifest', json)
   })
 
-  var torrentPromise = global.fetch('/planktos/root.torrent') // TODO use cache
+  var torrentPromise = cachePromise
+  .then(cache => cache.match('/planktos/root.torrent'))
   .then(response => response.arrayBuffer())
   .then(arrayBuffer => {
     var buffer = Buffer.from(arrayBuffer)
@@ -110,16 +113,9 @@ function update () {
     ])
   })
 
-  var downloadedPromise = persistent.get('downloaded')
-  .then(downloaded => {
-    if (!downloaded) return persistent.set('downloaded', {})
-  })
-
   return Promise.all([
-    cachePromise,
     manifestPromise,
-    torrentPromise,
-    downloadedPromise
+    torrentPromise
   ])
 }
 

@@ -30,6 +30,7 @@ function onFetch (event) {
 
   debug('FETCH', 'clientId=' + event.clientId, 'url=' + name)
 
+  // TODO let browser handle request if file is not in torrent
   if (planktos.preCached.indexOf('/' + name) !== -1) {
     return event.respondWith(global.caches.open('planktos')
     .then(cache => cache.match('/' + name)))
@@ -37,12 +38,9 @@ function onFetch (event) {
     return event.respondWith(createInjector(url))
   } else {
     return event.respondWith(planktos.getFileBlob(name)
-    .then(blob => {
-      if (blob) return new Response(blob)
-      else return global.fetch(event.request)
-    })
+    .then(blob => new Response(blob))
     .catch(err => {
-      debug('FETCH-ERROR', err)
+      if (err.message !== 'File not found') debug('FETCH-ERROR', err)
       return global.fetch(event.request)
     }))
   }

@@ -9,16 +9,21 @@ if (typeof navigator === 'undefined') throw new Error('injection.js must be run 
 if (!navigator.serviceWorker) throw new Error('No servier worker support')
 
 navigator.serviceWorker.addEventListener('message', onMessage)
+navigator.serviceWorker.addEventListener('controllerchange', onControllerChange)
 window.addEventListener('beforeunload', onBeforUnload)
 
-var webtorrent = new WebTorrent()
-var downloaded = new IdbKvStore('planktos-downloaded')
+var webtorrent = null
+var downloaded = null
 
-// TODO check if controller is null
-// TODO listen for sw onchange event
-navigator.serviceWorker.controller.postMessage({type: 'available'})
+onControllerChange()
+
+function onControllerChange () {
+  if (!navigator.serviceWorker.controller) return
+  navigator.serviceWorker.controller.postMessage({type: 'available'})
+}
 
 function onBeforUnload () {
+  if (!navigator.serviceWorker.controller) return
   navigator.serviceWorker.controller.postMessage({type: 'unavailable'})
 }
 
@@ -32,6 +37,9 @@ function onMessage (event) {
 }
 
 function download (torrentId) {
+  downloaded = downloaded || new IdbKvStore('planktos-downloaded')
+  webtorrent = webtorrent || new WebTorrent()
+
   var opts = {store: IdbChunkStore}
   webtorrent.add(torrentId, opts, function (torrent) {
     torrent.on('done', function () {
