@@ -1,6 +1,5 @@
 node_modules
 npm-debug.log
 *.swp
-*bundle.js
 example/planktos.sw.js
 example/planktos

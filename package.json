@@ -1,7 +1,7 @@
 {
   "name": "planktos",
-  "version": "0.0.0",
-  "description": "building a p2p web",
+  "version": "0.1.0",
+  "description": "Easily serve static website assets over bittorrent",
   "main": "index.js",
   "bin": "./bin/setup.js",
   "dependencies": {
@@ -19,22 +19,39 @@
   "devDependencies": {
     "browserify": "^13.1.1",
     "express": "^4.14.0",
-    "standard": "^8.4.0"
+    "standard": "^8.6.0"
   },
   "scripts": {
     "standard": "standard",
-    "prepublish": "npm run -s bundle",
-    "bundle": "standard && browserify injection.js -o injection.bundle.js --debug && browserify sw.js -o sw.bundle.js --debug",
+    "bundle": "browserify injection.js -o build/injection.js --debug && browserify sw.js -o build/sw.js --debug",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xuset/planktos.git"
+  },
+  "keywords": [
+    "bittorrent",
+    "webtorrent",
+    "p2p",
+    "static",
+    "seed"
+  ],
   "standard": {
     "globals": [
       "URL",
       "Response",
       "BroadcastChannel",
       "Blob"
+    ],
+    "ignore": [
+      "build"
     ]
   },
-  "author": "",
-  "license": "MIT"
+  "author": "xuset",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/xuset/planktos/issues"
+  },
+  "homepage": "http://www.planktos.xyz"
 }

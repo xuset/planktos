@@ -31,9 +31,9 @@ function setup (rootDir, includes, webseedUrls) {
       if (err) throw err
 
       copyFile(path.join(__dirname, '../injection.html'), path.join(dstDir, 'injection.html'))
-      copyFile(path.join(__dirname, '../injection.bundle.js'), path.join(dstDir, 'injection.bundle.js'))
+      copyFile(path.join(__dirname, '../build/injection.js'), path.join(dstDir, 'injection.js'))
       copyFile(path.join(__dirname, '../install.js'), path.join(dstDir, 'install.js'))
-      copyFile(path.join(__dirname, '../sw.bundle.js'), path.join(rootDir, 'planktos.sw.js'))
+      copyFile(path.join(__dirname, '../build/sw.js'), path.join(rootDir, 'planktos.sw.js'))
       fs.writeFileSync(dstDir + '/root.torrent', torrent)
       writeManifest(rootDir, dstDir, mappings)
     })

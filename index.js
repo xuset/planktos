@@ -7,7 +7,7 @@ var preCached = [
   '/planktos/root.torrent',
   '/planktos/manifest.json',
   '/planktos/injection.html',
-  '/planktos/injection.bundle.js',
+  '/planktos/injection.js',
   '/planktos/install.js'
 ]
 
