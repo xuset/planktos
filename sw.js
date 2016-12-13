@@ -22,7 +22,7 @@ function onFetch (event) {
   var name = url.pathname.substr(1)
   var search = url.search.substr(1).split('&')
 
-  if (url.host !== global.location.host) return
+  if (url.host !== global.location.host || event.request.method !== 'GET') return
   if (planktos.preCached.indexOf('/' + name) === -1 && name.startsWith('planktos/')) return
   if (name === '') name = 'index.html'
 
