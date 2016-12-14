@@ -23,7 +23,7 @@
           <img src="planktos-logo.png" alt="" style="width:10%; display: inline-block; float: left">
           <span>
             <h1>Planktos</h1>
-            <h2>A library for building p2p web apps</h2>
+            <h2>Serving websites over BitTorrent</h2>
             <a href="https://github.com/xuset/planktos" class="button"><small>View project on</small> GitHub</a>
           </span>
         </span>
@@ -38,9 +38,11 @@
             <a href="https://badge.fury.io/js/planktos"><img src="https://badge.fury.io/js/planktos.svg" alt="npm version" height="18"></a>
           </div>
 
-          <h3><a class="anchor" href="#" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Header</h3>
+          <p>Planktos is a library for enabling a website's static assets to be served over BitTorrent. By utilizing service workers and <a href="https://webtorrent.io/">WebTorrent</a>, a website can be served from the users of the site instead of from a server. Using Planktos allows site owners to: offset declining ad revenue through reduce bandwidth, increas scalability since download speeds increase with more users, and increase uptime since static content can still be retreived from BitTorrent even though the server is down. The only setup required is creating a torrent with the static content and including a script tag in the web pages of the site. No extra software or browser plugins needed; Planktos works in plain Chrome, Firefox, and Opera. If the user's browser doesn't support Planktos then everything fallsback nicely to regular https.</p>
 
-          <p>body</p>
+          <p><a href="https://github.com/xuset/planktos#setup">Setup Planktos</a></p>
+          <!--<h3><a class="anchor" href="#" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Header</h3>-->
+
 
       </div>
     </div>
