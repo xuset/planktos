@@ -144,9 +144,22 @@ function noop () {
   // does nothing
 }
 
+var helpText = `${process.argv[1]} [options] [file or directory...]
+
+Copies the planktos files into the current working directory and packages the given files and directories into a torrent.
+
+-r    root directory. All given files and directories must be descendents of the root. Default: cwd
+-w    web seed url to include in the generated torrent. Default: none
+
+`
+
 if (require.main === module) {
   var argv = minimist(process.argv.slice(2))
-  var rootDir = argv.s || process.cwd()
+  if (argv.h || argv.help) {
+    console.error(helpText)
+    process.exit(0)
+  }
+  var rootDir = argv.r || process.cwd()
   var includes = argv['_'].length === 0 ? [rootDir] : argv['_']
   var webseedUrls = argv.w
   setup(rootDir, includes, webseedUrls)
