@@ -1,6 +1,6 @@
 <h1 align="center">
-  <a href="http://www.planktos.xyz/">
-    <img src="http://www.planktos.xyz/planktos-logo.png" width="35" alt="planktos">
+  <a href="https://xuset.github.io/planktos/">
+    <img src="https://xuset.github.io/planktos/planktos-logo.png" width="35" alt="planktos">
   </a>
   Planktos
 </h1>
