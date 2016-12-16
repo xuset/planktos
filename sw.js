@@ -7,6 +7,7 @@ require('debug').enable('planktos:*')
 var debug = require('debug')('planktos:sw')
 var planktos = require('.')
 
+var scope = global.location.pathname.substring(0, global.location.pathname.lastIndexOf('/'))
 var available = {}
 var delegator = null
 
@@ -19,12 +20,12 @@ assignDelegator()
 
 function onFetch (event) {
   var url = new URL(event.request.url)
-  var name = url.pathname.substr(1)
+  var name = url.pathname.replace(scope, '').substr(1)
   var search = url.search.substr(1).split('&')
 
   if (url.host !== global.location.host || event.request.method !== 'GET') return
   if (planktos.preCached.indexOf('/' + name) === -1 && name.startsWith('planktos/')) return
-  if (name === '') name = 'index.html'
+  if (name === '') name = 'index.html' // TODO handle case when file is not top level
 
   assignDelegator()
 
@@ -33,7 +34,7 @@ function onFetch (event) {
   // TODO let browser handle request if file is not in torrent
   if (planktos.preCached.indexOf('/' + name) !== -1) {
     return event.respondWith(global.caches.open('planktos')
-    .then(cache => cache.match('/' + name)))
+    .then(cache => cache.match(scope + '/' + name)))
   } else if (event.clientId == null && search.indexOf('forceSW') === -1) {
     return event.respondWith(createInjector(url))
   } else {
@@ -52,7 +53,7 @@ function onActivate () {
 
 function onInstall (event) {
   debug('INSTALL')
-  var update = planktos.update()
+  var update = planktos.update(scope)
   update.then(() => planktos.getManifest())
   .then((manifest) => debug('MANIFEST', manifest))
   .then(() => planktos.getTorrentMeta())
@@ -94,7 +95,7 @@ function createInjector (url) {
   modUrl.search = (url.search === '' ? '?' : url.search + '&') + 'forceSW'
 
   return global.caches.open('planktos')
-  .then(cache => cache.match('/planktos/injection.html'))
+  .then(cache => cache.match(scope + '/planktos/injection.html'))
   .then(response => response.text())
   .then(text => {
     var blob = new Blob([text.replace(/{{url}}/g, modUrl.toString())], {type: 'text/html'})

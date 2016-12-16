@@ -89,20 +89,23 @@ function getFileBlob (filename) {
   })
 }
 
-function update () {
+function update (url) {
+  if (!url) url = ''
+  if (url.endsWith('/')) url = url.substr(0, url.length - 1)
+
   var cachePromise = global.caches.open('planktos')
-  .then((cache) => cache.addAll(preCached))
+  .then((cache) => cache.addAll(preCached.map(f => url + f)))
   .then(() => global.caches.open('planktos'))
 
   var manifestPromise = cachePromise
-  .then(cache => cache.match('/planktos/manifest.json'))
+  .then(cache => cache.match(url + '/planktos/manifest.json'))
   .then(response => response.json())
   .then(json => {
     return persistent.set('manifest', json)
   })
 
   var torrentPromise = cachePromise
-  .then(cache => cache.match('/planktos/root.torrent'))
+  .then(cache => cache.match(url + '/planktos/root.torrent'))
   .then(response => response.arrayBuffer())
   .then(arrayBuffer => {
     var buffer = Buffer.from(arrayBuffer)
