@@ -5,28 +5,36 @@
   Planktos
 </h1>
 <p align="center">
-   <a href="https://badge.fury.io/js/planktos">
+   <a href="https://www.npmjs.com/package/planktos">
      <img src="https://badge.fury.io/js/planktos.svg" alt="npm version" height="18">
    </a>
 </p>
 
-Planktos enables the static portions of websites to be served over bittorrent from the website's users instead of over http from the web server. Some benifits in doing this are: offset declining ad revenue by utilizing the user's bandwidth, increased fault tolerence since the static portions are still accessible over bittorrent even if the web server goes down, and better scalabilty since downloads are faster with more peers.
-
-Installing planktos into your site is as simple as registering the planktos service worker and creating a torrent that holds your static assets (or the entire site if it's completely static). There is no need to change your code since the service worker takes care of everything from intercepting the http requests to torrent downloading and seeding.
+Planktos enables websites to serve their static content over bittorrent from the users of the website. This allows site owners to offset declining ad revenue by utilizing the user's bandwidth and scale easier since downloads get faster with more peers. Planktos works in vanilla Chrome and Firefox by using service workers to intercept http requests, and [webtorrent](https://webtorrent.io/) to download the requested files from other users over bittorrent. Installing planktos into a website is as simple as registering the planktos service worker and creating a torrent that holds the static assets (or the entire site if it's completely static).
 
 ## Setup
 
-First install the planktos command line tool with: `npm install -g planktos`
+The planktos command line tool copies the neccessary library files, and it packages the website's files into a torrent. To install the tool run: 
 
-Then change your current working directory to the **root of your website**, and use the planktos tool to generate the torrent and neccessary files. You can specify to only include certain directories or files in the torrent with:
+`npm install -g planktos`
 
-`planktos <dir_or_file_1> <dir_or_file_2> ...`
+Now change your current working directory to the directory you want to be served by planktos. The library files and service worker file need to be copied into this directory which can be done by running:
 
-If no files or directories are passed, planktos includes everything in the current working directory.
+`planktos --lib-only`
 
-After the operation has completed you should see a planktos directory and the `planktos.sw.js` service worker in your website's root directory. The planktos service worker needs to be registered, for convinence this script tag can be included which takes care of installing the service worker:
+The service worker needs to be registered which can be done by including this script:
 
 `<script src="/planktos/install.js"></script>`
+
+The final step is packaging the files into a torrent so it can be served over bittorrent which is done by running:
+
+`planktos [directories or files...]`
+
+If no files or directories are passed, planktos includes everything in the current working directory. Everything is setup now, and to test that everything is working open up the dev tools in look in the network tab. After modifying the website's files, the torrent can be repackaged by running the above command again.
+
+There are a few things to keep in mind when using planktos:
+ * The site must be served over https (or http on localhost) since service workers have restrictions on which types of sites can register them.
+ * The web server must support the Range header since the server is used as a webseed. Most serves support this but python's simplehttpserver is a common one that doesn't.
 
 ## How it works
 
