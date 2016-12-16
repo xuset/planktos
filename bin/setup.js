@@ -11,6 +11,16 @@ var minimist = require('minimist')
 
 var RESERVED_DIR = 'planktos'
 
+function copyLib (rootDir) {
+  rootDir = absPath(rootDir)
+  var dstDir = rootDir + '/' + RESERVED_DIR
+  if (!fs.existsSync(dstDir)) fs.mkdirSync(dstDir)
+  copyFile(path.join(__dirname, '../injection.html'), path.join(dstDir, 'injection.html'))
+  copyFile(path.join(__dirname, '../build/injection.js'), path.join(dstDir, 'injection.js'))
+  copyFile(path.join(__dirname, '../install.js'), path.join(dstDir, 'install.js'))
+  copyFile(path.join(__dirname, '../build/sw.js'), path.join(rootDir, 'planktos.sw.js'))
+}
+
 function setup (rootDir, includes, webseedUrls) {
   rootDir = absPath(rootDir)
   includes = includes.map(p => absPath(p))
@@ -34,10 +44,7 @@ function setup (rootDir, includes, webseedUrls) {
     createTorrent(torrentFiles, opts, function (err, torrent) {
       if (err) throw err
 
-      copyFile(path.join(__dirname, '../injection.html'), path.join(dstDir, 'injection.html'))
-      copyFile(path.join(__dirname, '../build/injection.js'), path.join(dstDir, 'injection.js'))
-      copyFile(path.join(__dirname, '../install.js'), path.join(dstDir, 'install.js'))
-      copyFile(path.join(__dirname, '../build/sw.js'), path.join(rootDir, 'planktos.sw.js'))
+      copyLib(rootDir)
       fs.writeFileSync(dstDir + '/root.torrent', torrent)
       writeManifest(rootDir, dstDir, mappings)
     })
@@ -150,23 +157,36 @@ function noop () {
   // does nothing
 }
 
-var helpText = `${process.argv[1]} [options] [file or directory...]
-
-Copies the planktos files into the current working directory and packages the given files and directories into a torrent.
-
--r    root directory. All given files and directories must be descendents of the root. Default: cwd
--w    web seed url to include in the generated torrent. Default: none
-
-`
+function printHelp () {
+  console.error(process.argv[1], '[options] [file or directory...]')
+  console.error('')
+  console.error('Copies the planktos files into the current working directory and packages the given files and directories into a torrent.')
+  console.error('')
+  console.error('-r,--root DIR      root directory. All given files and directories must be descendents of the root. Default: cwd')
+  console.error('-w,--webseed URL   web seed url to include in the generated torrent. Default: none')
+  console.error('-l,--lib-only      only copy the planktos library and service worker. This does not generate the torrent')
+}
 
 if (require.main === module) {
-  var argv = minimist(process.argv.slice(2))
-  if (argv.h || argv.help) {
-    console.error(helpText)
+  var argv = minimist(process.argv.slice(2), {
+    alias: {
+      h: 'help',
+      r: 'root',
+      w: 'webseed',
+      c: 'copy-only'
+    },
+    boolean: [
+      'copy-only'
+    ]
+  })
+  if (argv.help) {
+    printHelp()
     process.exit(0)
   }
-  var rootDir = argv.r || process.cwd()
+  var rootDir = argv.root || process.cwd()
   var includes = argv['_'].length === 0 ? [rootDir] : argv['_']
-  var webseedUrls = argv.w
-  setup(rootDir, includes, webseedUrls)
+  var webseedUrls = argv.webseed
+
+  if (argv['lib-only']) copyLib(rootDir)
+  else setup(rootDir, includes, webseedUrls)
 }
