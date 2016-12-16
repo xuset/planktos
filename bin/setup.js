@@ -16,6 +16,10 @@ function setup (rootDir, includes, webseedUrls) {
   includes = includes.map(p => absPath(p))
   var dstDir = rootDir + '/' + RESERVED_DIR
 
+  if (includes.find(f => !isNested(rootDir, f))) {
+    throw new Error('Included files must be inside the root directory')
+  }
+
   if (!fs.existsSync(dstDir)) fs.mkdirSync(dstDir)
 
   copyAsHash(rootDir, includes, dstDir, function (err, mappings) {
@@ -54,8 +58,7 @@ function copyAsHash (rootDir, srcList, dstDir, cb) {
   var files = []
 
   for (var item of srcList) {
-    var ignore = [dstDir]
-    walk(item, ignore, files) // populates files
+    files = files.concat(walk(item).filter(f => !isNested(dstDir, f)))
   }
 
   var tasks = files.map(fname => {
@@ -114,7 +117,7 @@ function copyFile (srcFile, dstFile, flags, cb) {
   read.pipe(write)
 }
 
-function walk (dir, ignore, filelist) {
+function walk (dir, filelist) {
   var files = []
   filelist = filelist || []
   try {
@@ -126,9 +129,8 @@ function walk (dir, ignore, filelist) {
 
   for (var file of files) {
     var name = dir + '/' + file
-    if (ignore.indexOf(name) !== -1) continue
     if (fs.statSync(name).isDirectory()) {
-      walk(name, ignore, filelist)
+      walk(name, filelist)
     } else {
       filelist.push(name)
     }
@@ -137,7 +139,11 @@ function walk (dir, ignore, filelist) {
 }
 
 function absPath (fpath) {
-  return path.isAbsolute(fpath) ? fpath : process.cwd() + '/' + fpath
+  return path.normalize(path.isAbsolute(fpath) ? fpath : process.cwd() + '/' + fpath)
+}
+
+function isNested (root, sub) {
+  return absPath(sub + '/').startsWith(absPath(root + '/'))
 }
 
 function noop () {
