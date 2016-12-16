@@ -42,7 +42,10 @@ function download (torrentId) {
 
   var opts = {store: IdbChunkStore}
   webtorrent.add(torrentId, opts, function (torrent) {
-    if (torrent.urlList.length === 0) torrent.addWebSeed(window.location.origin)
+    if (torrent.urlList.length === 0) {
+      var swUrl = navigator.serviceWorker.controller.scriptURL
+      torrent.addWebSeed(swUrl.substring(0, swUrl.lastIndexOf('/')))
+    }
     torrent.on('done', function () {
       debug('TORRENT DOWNLOADED', torrent.files.map(f => f.name))
       var channel = new BroadcastChannel('planktos-downloaded')
