@@ -1,50 +1,147 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset='utf-8'>
-    <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
-    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
-    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
-    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print">
+<html lang="en">
 
-    <!--[if lt IE 9]>
-    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
 
     <title>Planktos</title>
-  </head>
 
-  <body>
-    <header>
-      <div class="inner">
-        <span>
-          <img src="planktos-logo.png" alt="" style="width:10%; display: inline-block; float: left">
-          <span>
-            <h1>Planktos</h1>
-            <h2>Serving websites over BitTorrent</h2>
-            <a href="https://github.com/xuset/planktos" class="button"><small>View project on</small> GitHub</a>
-          </span>
-        </span>
-      </div>
+    <!-- Bootstrap Core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom Fonts -->
+    <link href="css/font-awesome.min.css" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700" rel="stylesheet" type="text/css">
+
+    <!-- Theme CSS -->
+    <link href="css/grayscale.min.css" rel="stylesheet">
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+</head>
+
+<body id="page-top" data-spy="scroll" data-target=".navbar-fixed-top">
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-custom navbar-fixed-top" role="navigation">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-main-collapse">
+                    Menu <i class="fa fa-bars"></i>
+                </button>
+                <a class="navbar-brand page-scroll" href="#page-top">Planktos</a>
+            </div>
+
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <div class="collapse navbar-collapse navbar-right navbar-main-collapse">
+                <ul class="nav navbar-nav">
+                    <!-- Hidden li included to remove active class from about link when scrolled up past about section -->
+                    <li class="hidden">
+                        <a href="#page-top"></a>
+                    </li>
+                    <li>
+                        <a class="page-scroll" href="#about">About</a>
+                    </li>
+                    <li>
+                        <a class="page-scroll" href="#download">Setup</a>
+                    </li>
+                    <li>
+                        <a class="page-scroll" href="#source">Source</a>
+                    </li>
+                </ul>
+            </div>
+            <!-- /.navbar-collapse -->
+        </div>
+        <!-- /.container -->
+    </nav>
+
+    <!-- Intro Header -->
+    <header class="intro">
+        <div class="intro-body">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-8 col-md-offset-2">
+                        <img src="planktos-logo.png" alt="" style="width: 20%">
+                        <h1 class="brand-heading">Planktos</h1>
+                        <p class="intro-text">Serving websites over bittorrent</p>
+                        <a href="#about" class="btn btn-circle page-scroll">
+                            <i class="fa fa-angle-double-down animated"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
     </header>
 
-    <div id="content-wrapper" style="overflow:auto">
-      <div class="inner">
-        <section id="main-content">
+    <!-- About Section -->
+    <section id="about" class="container content-section text-center">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2">
+                <h2>About Planktos</h2>
+                <p>Planktos is a library for enabling a website's static assets to be served over BitTorrent. By utilizing service workers and <a target="_blank" href="https://webtorrent.io/">WebTorrent</a>, a website can be served from the users of the site instead of from a server. Using Planktos allows site owners to: offset declining ad revenue through reduce bandwidth, increas scalability since download speeds increase with more users, and increase uptime since static content can still be retreived from BitTorrent even though the server is down. The only setup required is creating a torrent with the static content and including a script tag in the web pages of the site. No extra software or browser plugins needed; Planktos works in plain Chrome, Firefox, and Opera. If the user's browser doesn't support Planktos then everything fallsback nicely to regular https.</p>
+            </div>
+        </div>
+    </section>
 
-          <div>
-            <a href="https://badge.fury.io/js/planktos"><img src="https://badge.fury.io/js/planktos.svg" alt="npm version" height="18"></a>
-          </div>
+    <!-- Download Section -->
+    <section id="download" class="content-section text-center">
+        <div class="download-section">
+            <div class="container">
+                <div class="col-lg-8 col-lg-offset-2">
+                    <h2>Install Planktos</h2>
+                    <p>Installing planktos is as simple as registering the Planktos service worker, and generating the torrent.</p>
+                    <a target="_blanks" href="https://github.com/xuset/planktos#setup" class="btn btn-default btn-lg">Install</a>
+                </div>
+            </div>
+        </div>
+    </section>
 
-          <p>Planktos is a library for enabling a website's static assets to be served over BitTorrent. By utilizing service workers and <a href="https://webtorrent.io/">WebTorrent</a>, a website can be served from the users of the site instead of from a server. Using Planktos allows site owners to: offset declining ad revenue through reduce bandwidth, increas scalability since download speeds increase with more users, and increase uptime since static content can still be retreived from BitTorrent even though the server is down. The only setup required is creating a torrent with the static content and including a script tag in the web pages of the site. No extra software or browser plugins needed; Planktos works in plain Chrome, Firefox, and Opera. If the user's browser doesn't support Planktos then everything fallsback nicely to regular https.</p>
+    <!-- Contact Section -->
+    <section id="source" class="container content-section text-center">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2">
+                <h2>Open Source</h2>
+                <p>Planktos is an open source project licensed under MIT. Stop by the github page if you want to hack on Planktos or create an issue</p>
+                <ul class="list-inline banner-social-buttons">
+                    <li>
+                        <a target="_blank" href="https://github.com/xuset/planktos" class="btn btn-default btn-lg"><i class="fa fa-github fa-fw"></i> <span class="network-name">Github</span></a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </section>
 
-          <p><a href="https://github.com/xuset/planktos#setup">Setup Planktos</a></p>
-          <!--<h3><a class="anchor" href="#" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Header</h3>-->
+    <!-- Footer -->
+    <footer>
+        <div class="container text-center">
+            <p>Copyright &copy; Austin Middleton</p>
+            <p><a href="https://github.com/BlackrockDigital/startbootstrap-grayscale">Grayscale</a> theme</p>
+        </div>
+    </footer>
 
+    <!-- jQuery -->
+    <script src="js/jquery.min.js"></script>
 
-      </div>
-    </div>
-  </body>
+    <!-- Bootstrap Core JavaScript -->
+    <script src="js/bootstrap.min.js"></script>
+
+    <!-- Plugin JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.3/jquery.easing.min.js"></script>
+
+    <!-- Theme JavaScript -->
+    <script src="js/grayscale.min.js"></script>
+
+</body>
+
 </html>
