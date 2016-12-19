@@ -7,7 +7,7 @@
   "dependencies": {
     "chunk-store-stream": "^2.0.2",
     "create-torrent": "^3.25.1",
-    "debug": "^2.3.3",
+    "debug": "2.4.4",
     "idb-kv-store": "^2.2.2",
     "indexdb-chunk-store": "^1.0.3",
     "minimist": "^1.2.0",

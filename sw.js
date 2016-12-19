@@ -1,8 +1,5 @@
 self.global = self // eslint-disable-line
 
-// Temp bug fix: https://github.com/visionmedia/debug/pull/335
-if (!global.window) global.window = global
-
 require('debug').enable('planktos:*')
 var debug = require('debug')('planktos:sw')
 var planktos = require('.')
