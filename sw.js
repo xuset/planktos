@@ -3,6 +3,7 @@ self.global = self // eslint-disable-line
 require('debug').enable('planktos:*')
 var debug = require('debug')('planktos:sw')
 var planktos = require('.')
+var injection = require('./lib/injection')
 
 var scope = global.location.pathname.substring(0, global.location.pathname.lastIndexOf('/'))
 var available = {}
@@ -33,7 +34,10 @@ function onFetch (event) {
     return event.respondWith(global.caches.open('planktos')
     .then(cache => cache.match(scope + '/' + name)))
   } else if (event.clientId == null && search.indexOf('forceSW') === -1) {
-    return event.respondWith(createInjector(url))
+    var modUrl = new URL(url.toString())
+    modUrl.search = (url.search === '' ? '?' : url.search + '&') + 'forceSW'
+    var html = injection.iframe.replace(/{{url}}/g, modUrl.toString())
+    return event.respondWith(new Response(new Blob([html], {type: 'text/html'})))
   } else {
     // TODO handle RANGE header
     return event.respondWith(planktos.getFileBlob(name)
@@ -96,18 +100,5 @@ function assignDelegator () {
         })
       })
     }
-  })
-}
-
-function createInjector (url) {
-  var modUrl = new URL(url.toString())
-  modUrl.search = (url.search === '' ? '?' : url.search + '&') + 'forceSW'
-
-  return global.caches.open('planktos')
-  .then(cache => cache.match(scope + '/planktos/injection.html'))
-  .then(response => response.text())
-  .then(text => {
-    var blob = new Blob([text.replace(/{{url}}/g, modUrl.toString())], {type: 'text/html'})
-    return new Response(blob)
   })
 }

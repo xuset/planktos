@@ -6,7 +6,6 @@ if (global.WorkerGlobalScope) delete global.FileReaderSync
 var preCached = [
   '/planktos/root.torrent',
   '/planktos/manifest.json',
-  '/planktos/injection.html',
   '/planktos/planktos.js',
   '/planktos/install.js'
 ]

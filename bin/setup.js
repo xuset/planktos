@@ -17,7 +17,6 @@ function copyLib (rootDir) {
   rootDir = absPath(rootDir)
   var dstDir = rootDir + '/' + RESERVED_DIR
   if (!fs.existsSync(dstDir)) fs.mkdirSync(dstDir)
-  copyFile(__dirname + '/../injection.html', dstDir + '/injection.html')
   copyFile(__dirname + '/../install.js', dstDir + '/install.js')
   copyFile(__dirname + '/../build/planktos.js', dstDir + '/planktos.js')
   copyFile(__dirname + '/../build/planktos.sw.js', rootDir + '/planktos.sw.js')
