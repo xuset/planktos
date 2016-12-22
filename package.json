@@ -23,7 +23,9 @@
   },
   "scripts": {
     "standard": "standard",
-    "bundle": "browserify injection.js -o build/injection.js --debug && browserify sw.js -o build/sw.js --debug",
+    "bundle-sw": "browserify sw.js --ignore webtorrent -o build/planktos.sw.js --debug",
+    "bundle-lib": "browserify index.js -s planktos -o build/planktos.js --debug",
+    "bundle": "npm run -s bundle-lib && npm run -s bundle-sw",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

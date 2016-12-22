@@ -2,6 +2,8 @@
 
 module.exports = setup
 
+/* eslint no-path-concat: "off" */
+
 var fs = require('fs')
 var path = require('path')
 var parallelLimit = require('run-parallel-limit')
@@ -15,10 +17,10 @@ function copyLib (rootDir) {
   rootDir = absPath(rootDir)
   var dstDir = rootDir + '/' + RESERVED_DIR
   if (!fs.existsSync(dstDir)) fs.mkdirSync(dstDir)
-  copyFile(path.join(__dirname, '../injection.html'), path.join(dstDir, 'injection.html'))
-  copyFile(path.join(__dirname, '../build/injection.js'), path.join(dstDir, 'injection.js'))
-  copyFile(path.join(__dirname, '../install.js'), path.join(dstDir, 'install.js'))
-  copyFile(path.join(__dirname, '../build/sw.js'), path.join(rootDir, 'planktos.sw.js'))
+  copyFile(__dirname + '/../injection.html', dstDir + '/injection.html')
+  copyFile(__dirname + '/../install.js', dstDir + '/install.js')
+  copyFile(__dirname + '/../build/planktos.js', dstDir + '/planktos.js')
+  copyFile(__dirname + '/../build/planktos.sw.js', rootDir + '/planktos.sw.js')
 }
 
 function setup (rootDir, includes, webseedUrls) {

@@ -7,7 +7,7 @@ var preCached = [
   '/planktos/root.torrent',
   '/planktos/manifest.json',
   '/planktos/injection.html',
-  '/planktos/injection.js',
+  '/planktos/planktos.js',
   '/planktos/install.js'
 ]
 
@@ -19,6 +19,7 @@ module.exports.getManifest = getManifest
 module.exports.getDownloaded = getDownloaded
 module.exports.getTorrentMeta = getTorrentMeta
 module.exports.getTorrentMetaBuffer = getTorrentMetaBuffer
+module.exports.downloader = require('./lib/downloader')
 
 var ChunkStream = require('chunk-store-stream')
 var IdbChunkStore = require('indexdb-chunk-store')
