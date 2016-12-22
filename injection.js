@@ -19,18 +19,33 @@ onControllerChange()
 
 function onControllerChange () {
   if (!navigator.serviceWorker.controller) return
-  navigator.serviceWorker.controller.postMessage({type: 'available'})
+  navigator.serviceWorker.controller.postMessage({
+    type: 'available',
+    planktos: true
+  })
 }
 
 function onBeforUnload () {
   if (!navigator.serviceWorker.controller) return
-  navigator.serviceWorker.controller.postMessage({type: 'unavailable'})
+  navigator.serviceWorker.controller.postMessage({
+    type: 'unavailable',
+    planktos: true
+  })
 }
 
 function onMessage (event) {
+  if (!event.data.planktos) return
   debug('MESSAGE', event.data)
   if (event.data.type === 'download') {
     download(new Buffer(event.data.torrentId))
+  } else if (event.data.type === 'request_availability') {
+    navigator.serviceWorker.controller.postMessage({
+      type: 'available',
+      planktos: true
+    })
+  } else if (event.data.type === 'cancel_download') {
+    if (webtorrent) webtorrent.destroy()
+    webtorrent = null
   } else {
     throw new Error('Unknown type: ' + event.data.type)
   }

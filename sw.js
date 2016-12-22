@@ -35,6 +35,7 @@ function onFetch (event) {
   } else if (event.clientId == null && search.indexOf('forceSW') === -1) {
     return event.respondWith(createInjector(url))
   } else {
+    // TODO handle RANGE header
     return event.respondWith(planktos.getFileBlob(name)
     .then(blob => new Response(blob))
     .catch(err => {
@@ -59,6 +60,7 @@ function onInstall (event) {
 }
 
 function onMessage (event) {
+  if (!event.data.planktos) return
   debug('MESSAGE', event.data)
   if (event.data.type === 'available') {
     available[event.source.id] = true
@@ -70,18 +72,28 @@ function onMessage (event) {
 }
 
 function assignDelegator () {
-  this.clients.matchAll().then(clients => {
+  this.clients.matchAll({type: 'window'}).then(clients => {
     var potentials = clients.filter(c => c.id in available)
     var redelegate = !delegator || !potentials.find(c => c.id === delegator.id)
-    if (redelegate && potentials.length > 0) {
+    if (potentials.length === 0) {
+      clients.forEach(c => c.postMessage({
+        type: 'request_availability',
+        planktos: true
+      }))
+    } else if (redelegate) {
       debug('ASSIGN', 'old=' + (delegator ? delegator.id : null), 'new=' + potentials[0].id)
       delegator = potentials[0]
       planktos.getTorrentMetaBuffer().then(buffer => {
-        var msg = {
+        if (delegator !== potentials[0]) return
+        clients.filter(c => c.id !== delegator.id).forEach(c => c.postMessage({
+          type: 'cancel_download',
+          planktos: true
+        }))
+        delegator.postMessage({
           type: 'download',
-          torrentId: buffer
-        }
-        delegator.postMessage(msg)
+          torrentId: buffer,
+          planktos: true
+        })
       })
     }
   })
