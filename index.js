@@ -15,30 +15,21 @@ module.exports.getFileBlob = getFileBlob
 module.exports.update = update
 module.exports.preCached = preCached // TODO better way to handle preCached
 module.exports.getManifest = getManifest
-module.exports.getDownloaded = getDownloaded
 module.exports.getTorrentMeta = getTorrentMeta
 module.exports.getTorrentMetaBuffer = getTorrentMetaBuffer
 module.exports._normalizePath = _normalizePath
 module.exports.downloader = require('./lib/downloader')
 
-const ChunkStream = require('chunk-store-stream')
+const ChunkStream = require('./lib/stream')
 const IdbChunkStore = require('indexeddb-chunk-store')
 const IdbKvStore = require('idb-kv-store')
 const toBlob = require('stream-to-blob')
 const parseTorrent = require('parse-torrent-file')
 const path = require('path')
 
-let waitingFetches = {}
 let persistent = new IdbKvStore('planktos')
-let downloaded = new IdbKvStore('planktos-downloaded')
 let priority = new IdbKvStore('planktos-priority')
 let chunkStore = null
-
-downloaded.on('set', onDownload)
-
-function getDownloaded () {
-  return downloaded.json()
-}
 
 function getManifest () {
   return persistent.get('manifest')
@@ -72,25 +63,16 @@ function getFileBlob (filePath) {
 
     chunkStore = chunkStore || new IdbChunkStore(torrentMeta.pieceLength, {name: torrentMeta.infoHash})
 
-    return downloaded.get(hash).then(isDownloaded => {
-      if (isDownloaded) {
-        let stream = ChunkStream.read(chunkStore, chunkStore.chunkLength, {
-          length: torrentMeta.length
-        })
-        return new Promise(function (resolve, reject) {
-          toBlob(stream, function (err, blob) {
-            if (err) return reject(err)
-            resolve(blob.slice(fileInfo.offset, fileInfo.offset + fileInfo.length))
-          })
-        })
-      } else {
-        priority.add(hash)
-        // Defer until the file finishes downloading
-        return new Promise(function (resolve) {
-          if (!waitingFetches[hash]) waitingFetches[hash] = []
-          waitingFetches[hash].push(resolve)
-        })
-      }
+    priority.add(hash) // TODO only add if necessary
+    let stream = new ChunkStream(chunkStore, {
+      start: fileInfo.offset,
+      end: fileInfo.offset + fileInfo.length
+    })
+    return new Promise(function (resolve, reject) {
+      toBlob(stream, function (err, blob) {
+        if (err) return reject(err)
+        resolve(blob)
+      })
     })
   })
 }
@@ -127,20 +109,6 @@ function update (url) {
     torrentPromise,
     priority.clear()
   ])
-}
-
-function onDownload (change) {
-  return persistent.get('manifest')
-  .then(manifest => {
-    let hash = change.key
-    if (hash in waitingFetches) {
-      let filePath = Object.keys(manifest).find(fname => manifest[fname] === hash)
-      let waiters = waitingFetches[hash]
-      delete waitingFetches[hash]
-      getFileBlob(filePath)
-      .then(blob => waiters.forEach(w => w(blob)))
-    }
-  })
 }
 
 function _normalizePath (filePath) {

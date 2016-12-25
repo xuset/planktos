@@ -37,11 +37,6 @@ describe('sanity check', function () {
     .then(manifest => assert('index.html' in manifest))
   })
 
-  it('getDownloaded()', function () {
-    return planktos.getDownloaded()
-    .then(downloaded => 'index.html' in downloaded)
-  })
-
   it('getTorrentMeta()', function () {
     return planktos.getTorrentMeta()
     .then(torrentMeta => parseTorrent.encode(torrentMeta))
