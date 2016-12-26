@@ -33,10 +33,12 @@ function onFetch (event) {
   if (planktos.preCached.indexOf('/' + name) !== -1) {
     return event.respondWith(global.caches.open('planktos')
     .then(cache => cache.match(scope + '/' + name)))
-  } else if (event.clientId == null && search.indexOf('forceSW') === -1) {
+  } else if (event.clientId == null && search.indexOf('noPlanktosInjection') === -1) {
     var modUrl = new URL(url.toString())
-    modUrl.search = (url.search === '' ? '?' : url.search + '&') + 'forceSW'
-    var html = injection.iframe.replace(/{{url}}/g, modUrl.toString())
+    modUrl.search = (url.search === '' ? '?' : url.search + '&') + 'noPlanktosInjection'
+    var template = name.endsWith('html') || name.endsWith('htm')
+      ? injection.docWrite : injection.iframe
+    var html = template.replace(/{{url}}/g, modUrl.toString())
     return event.respondWith(new Response(new Blob([html], {type: 'text/html'})))
   } else {
     // TODO handle RANGE header
