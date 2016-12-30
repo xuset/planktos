@@ -45,6 +45,18 @@ If the browser does not have service worker support than everything goes over ht
 Planktos is still early on in developement, and is not recomended for production use yet. Some issues that are holding back production use are:
  * Cannot selectively download files within a torrent; the entire torrent is downloaded. This is fine for small sites but this will get out of hand quick with larger sites.
  * No streaming support. The requested file must be downloaded in it's entirety before it can be displayed to the user. Currently only chrome supports streaming from the service worker while Firefox has an [open issue](https://bugzilla.mozilla.org/show_bug.cgi?id=1128959) for it.
+ 
+## Developing
+
+To hack on planktos, this process seems to work well:
+
+* `npm run standard` will run the style and syntax checker
+* `npm run bundle` will build the code and store the bundled output in the build directory.
+* `./bin/setup.js -r example` will run the main planktos executable on the example directory
+* `./bin/server.js example` will start a http server that will serve the example directories files
+* Then opening `http://localhost:8080` in a web browser, and making sure everything still works. Automated tests will come soon!
+
+Keep in mind that for changes to be reflected you'll have to unregister or update the existing planktos service worker and refresh.
 
 ## License
 
