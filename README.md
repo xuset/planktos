@@ -14,7 +14,7 @@ Planktos enables websites to serve their static content over bittorrent from the
 
 ## Setup
 
-The planktos command line tool copies the neccessary library files, and it packages the website's files into a torrent. To install the tool run: 
+The planktos command line tool copies the necessary library files, and it packages the website's files into a torrent. To install the tool run:
 
 `npm install -g planktos`
 
@@ -42,10 +42,10 @@ Once the planktos service worker is installed, it intercepts all http requests m
 
 If the browser does not have service worker support than everything goes over http like it would without planktos.
 
-Planktos is still early on in developement, and is not recomended for production use yet. Some issues that are holding back production use are:
+Planktos is still early on in development, and is not recommended for production use yet. Some issues that are holding back production use are:
  * Cannot selectively download files within a torrent; the entire torrent is downloaded. This is fine for small sites but this will get out of hand quick with larger sites.
  * No streaming support. The requested file must be downloaded in it's entirety before it can be displayed to the user. Currently only chrome supports streaming from the service worker while Firefox has an [open issue](https://bugzilla.mozilla.org/show_bug.cgi?id=1128959) for it.
- 
+
 ## Developing
 
 To hack on planktos, this process seems to work well:
@@ -56,7 +56,11 @@ To hack on planktos, this process seems to work well:
 * `./bin/server.js example` will start a http server that will serve the example directories files
 * Then opening `http://localhost:8080` in a web browser, and making sure everything still works. Automated tests will come soon!
 
-Keep in mind that for changes to be reflected you'll have to unregister or update the existing planktos service worker and refresh.
+Keep in mind that for changes to be reflected you'll have to unregister or update the existing planktos service worker and refresh. This can be done by simply closing all windows and opening a new window.
+
+Upon updating files served by planktos, the data stored in IndexedDB may no longer be representative of the files that need to be displayed, resulting in errors on page loads. A good workaround for now is to clear all locally stored data in your browser.
+
+To delete locally stored data in Chrome: [cookies and site data](chrome://settings/cookies)
 
 ## License
 
