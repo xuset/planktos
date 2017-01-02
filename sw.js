@@ -38,7 +38,7 @@ function onFetch (event) {
     modUrl.search = (url.search === '' ? '?' : url.search + '&') + 'noPlanktosInjection'
     var template = name.endsWith('html') || name.endsWith('htm')
       ? injection.docWrite : injection.iframe
-    var html = template.replace(/{{url}}/g, modUrl.toString())
+    var html = template.replace('{{url}}', modUrl.toString()).replace('{{scope}}', scope)
     return event.respondWith(new Response(new Blob([html], {type: 'text/html'})))
   } else {
     // TODO handle RANGE header
