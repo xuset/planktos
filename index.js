@@ -58,6 +58,23 @@ function getFileBlob (filename) {
 
   return persistent.get(['manifest', 'torrentMeta']).then(result => {
     var [manifest, torrentMeta] = result
+
+    // Try to find an index file if filename is a directory
+    if (filename.endsWith('/')) {
+      filesInDirectory = Object.keys(manifest).filter(
+        (elem) => elem.startsWith(filename)
+      ).map(
+        (elem) => elem.slice(elem.lastIndexOf('/') + 1)
+      )
+
+      indexFile = ['index.html', 'index.htm'].find((elem) => filesInDirectory.includes(elem))
+
+      if (indexFile === undefined)
+        throw new Error('File not found')
+
+      filename += indexFile
+    }
+
     var hash = manifest[filename]
     var fileInfo = torrentMeta.files.find(f => f.name === hash)
 
