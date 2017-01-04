@@ -48,7 +48,7 @@ function getTorrentMetaBuffer () { // TODO Fix parsing bug so this can be remove
   return persistent.get('torrentMetaBuffer')
 }
 
-function getFileBlob (filename) {
+function getFileBlob (filePath) {
   if (typeof BroadcastChannel === 'undefined') throw new Error('No BroadcastChannel support')
 
   if (!downloadChannel) {
@@ -59,23 +59,36 @@ function getFileBlob (filename) {
   return persistent.get(['manifest', 'torrentMeta']).then(result => {
     var [manifest, torrentMeta] = result
 
-    // Try to find an index file if filename is a directory
-    if (filename.endsWith('/')) {
-      filesInDirectory = Object.keys(manifest).filter(
-        (elem) => elem.startsWith(filename)
-      ).map(
-        (elem) => elem.slice(elem.lastIndexOf('/') + 1)
-      )
+    let getFilename = (filePath) => filePath.slice(filePath.lastIndexOf('/') + 1)
+    let filePathIsDir = (filePath) => filePath.endsWith('/')
+    let filenameHasExtension = (filename) => filename.indexOf('.') !== -1
 
-      indexFile = ['index.html', 'index.htm'].find((elem) => filesInDirectory.includes(elem))
-
-      if (indexFile === undefined)
-        throw new Error('File not found')
-
-      filename += indexFile
+    // Try to coerce extension-less files into directories
+    if (!filePathIsDir(filePath) && !filenameHasExtension(getFilename(filePath))) {
+      // Since directories are not stored in the manifest, we can only safely assume an extension-less
+      // file is a diretory if (1) the file isn't in the manifest and (2) there are files which
+      // are in subdirectories relative to the file path
+      if (Object.keys(manifest).indexOf(filePath) === -1 &&
+          Object.keys(manifest).find((fpath) => fpath.startsWith(filePath + '/'))) {
+        filePath += '/'
+      }
     }
 
-    var hash = manifest[filename]
+    // Try to find an index file if `filePath` is a directory
+    if (filePathIsDir(filePath)) {
+      let filesInDirectory = Object.keys(manifest).filter(
+        (fpath) => fpath.startsWith(filePath)
+      ).map(getFilename)
+
+      // Index files are listed in order of priority
+      let indexFilename = ['index.html', 'index.htm'].find((fname) => filesInDirectory.includes(fname))
+
+      if (indexFilename === undefined) throw new Error('File not found')
+
+      filePath += indexFilename
+    }
+
+    var hash = manifest[filePath]
     var fileInfo = torrentMeta.files.find(f => f.name === hash)
 
     if (!fileInfo) {
@@ -147,10 +160,10 @@ function onDownload () {
     var [manifest, downloaded] = result
     for (var hash in downloaded) {
       if (hash in waitingFetches) {
-        var filename = Object.keys(manifest).find(fname => manifest[fname] === hash)
+        var filePath = Object.keys(manifest).find(fname => manifest[fname] === hash)
         var waiters = waitingFetches[hash]
         delete waitingFetches[hash]
-        getFileBlob(filename)
+        getFileBlob(filePath)
         .then(b => {
           for (var p of waiters) {
             p(b)
