@@ -10,7 +10,11 @@
    </a>
 </p>
 
-Planktos enables websites to serve their static content over bittorrent from the users of the website. This allows site owners to offset declining ad revenue by utilizing the user's bandwidth and scale easier since downloads get faster with more peers. Planktos works in vanilla Chrome and Firefox by using service workers to intercept http requests, and [webtorrent](https://webtorrent.io/) to download the requested files from other users over bittorrent. Installing planktos into a website is as simple as registering the planktos service worker and creating a torrent that holds the static assets (or the entire site if it's completely static).
+Planktos enables websites to serve their static content over BitTorrent by turning users into seeders. This allows website owners to almost entirely eliminate hosting costs for static content, scale in realtime without provisioning more web servers, and prevent downtime in the case of infrastructure failure. Planktos works in vanilla Chrome and Firefox (no browser extensions needed), using the widely adopted WebRTC standard for peer to peer file transfers.
+
+Installing Planktos into a website is as simple as including the Planktos script and using the Planktos command line interface to bundle your static files into a torrent.
+
+A special thanks to the [webtorrent](https://webtorrent.io) project, which we use to interface with torrents from the browser.
 
 ## Setup
 
