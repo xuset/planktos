@@ -10,39 +10,41 @@
    </a>
 </p>
 
-Planktos enables websites to serve their static content over BitTorrent by turning users into seeders. This allows website owners to almost entirely eliminate hosting costs for static content, scale in realtime without provisioning more web servers, and prevent downtime in the case of infrastructure failure. Planktos works in vanilla Chrome and Firefox (no browser extensions needed), using the widely adopted WebRTC standard for peer to peer file transfers.
+Planktos enables websites to serve their static content over BitTorrent by turning users into seeders. This allows website owners to almost entirely eliminate hosting costs for static content and scale in realtime without provisioning more web servers. Planktos works in vanilla Chrome and Firefox (no browser extensions needed), using the widely adopted WebRTC standard for peer to peer file transfers.
 
-Installing Planktos into a website is as simple as including the Planktos script and using the Planktos command line interface to bundle your static files into a torrent.
+Installing Planktos into a website is as simple as including the Planktos install script and using the Planktos command line interface to bundle your static files into a torrent.
 
 A special thanks to the [webtorrent](https://webtorrent.io) project, which we use to interface with torrents from the browser.
 
 ## Setup
 
-The planktos command line tool copies the necessary library files, and it packages the website's files into a torrent. To install the tool run:
+The Planktos command line interface (CLI) copies the necessary library files and packages the website's files into a torrent. To install the tool run:
 
 `npm install -g planktos`
 
-Now change your current working directory to the directory you want to be served by planktos. The library files and service worker file need to be copied into this directory which can be done by running:
+Now change your current working directory to the directory you want to be served by Planktos. To copy the library files run:
 
 `planktos --lib-only`
 
-The service worker needs to be registered which can be done by including this script:
+The Planktos service worker, which intercepts network calls, needs to be registered, which can be done by including this script:      
 
 `<script src="/planktos/install.js"></script>`
 
-The final step is packaging the files into a torrent so it can be served over bittorrent which is done by running:
+Finally, the website files need to be packaged into a torrent, so they can be served over BitTorrent. To package all files into a torrent run:
 
-`planktos [directories or files...]`
+`planktos [directories and/or files]`
 
-If no files or directories are passed, planktos includes everything in the current working directory. Everything is setup now, and to test that everything is working open up the dev tools in look in the network tab. After modifying the website's files, the torrent can be repackaged by running the above command again.
+NOTE: If no files or directories are passed in, Planktos packages everything in the current working directory.
 
-There are a few things to keep in mind when using planktos:
- * The site must be served over https (or http on localhost) since service workers have restrictions on which types of sites can register them.
- * The web server must support the Range header since the server is used as a webseed. Most serves support this but python's simplehttpserver is a common one that doesn't.
+That was it. To test that everything is working as expected, use devtools to inspect the network requests. To update files simply run the Planktos command again.
+
+Requirements for Planktos Websites:
+ * The site must be served over https (or http on localhost), because service workers have restrictions on which types of sites can register them
+ * The web server must support the `HTTP Range` header, because the server is used as the initial seeder (see WebTorrent webseed). Most web servers support this feature; however, some, like Python's simplehttpserver, do not.
 
 ## How it works
 
-Once the planktos service worker is installed, it intercepts all http requests made by the browser. When a fetch request is intercepted, planktos looks to see if the requested file is in the torrent for the website. If it is, planktos responds with the file's data it retreived over bittorrent. If the requested file is not in the torrent, the request goes to the webserver over http like it would without planktos installed. Planktos uses the awesome [webtorrent](https://github.com/feross/webtorrent) project for everything bittorrent. One gotcha you may have noticed is that webtorrent relies on [WebRTC](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API) for it's peer connections, and the WebRTC api is not accessible from within service workers. Planktos gets around this by injecting a downloader script in the initial webpage request which handles all the webtorrent downloading and seeding operations since this cannot be done in a service worker currently. See the [W3C issue](https://github.com/w3c/webrtc-pc/issues/230) for more info on WebRTC in web workers.
+Once the planktos service worker is installed, it intercepts all http requests made by the browser. When a fetch request is intercepted, planktos looks to see if the requested file is in the torrent for the website. If it is, planktos responds with the file's data it retreived over bittorrent. If the requested file is not in the torrent, the request goes to the web server over http like it would without planktos installed. Planktos uses the awesome [webtorrent](https://github.com/feross/webtorrent) project for everything bittorrent. One gotcha you may have noticed is that webtorrent relies on [WebRTC](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API) for it's peer connections, and the WebRTC api is not accessible from within service workers. Planktos gets around this by injecting a downloader script in the initial webpage request which handles all the webtorrent downloading and seeding operations since this cannot be done in a service worker currently. See the [W3C issue](https://github.com/w3c/webrtc-pc/issues/230) for more info on WebRTC in web workers.
 
 If the browser does not have service worker support than everything goes over http like it would without planktos.
 
