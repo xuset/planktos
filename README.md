@@ -44,7 +44,7 @@ Requirements for Planktos Websites:
 
 ## How it Works
 
-The Planktos CLI copies the website's static assets to `/planktos/[file_hash]` and packages those files into a torrent at `/planktos/root.torrent`. The CLI then generates a manifest that maps file paths to the their respective hashes, and is stores it at `/planktos/manifest.json`. Finally the CLI copies the Planktos library files including the service worker.
+The Planktos CLI copies the website's static assets to `/planktos/[file_hash]` and packages those files into a torrent at `/planktos/root.torrent`. The CLI then generates a manifest that maps file paths to the their respective hashes, and stores it at `/planktos/manifest.json`. Finally the CLI copies the Planktos library files including the service worker.
 
 When the webpage is loaded, Planktos installs a service worker that intercepts all http requests made by the webpage. When a request is intercepted, Planktos checks to see if the requested file is in the torrent. If the file is in the torrent, it is downloaded from peers, otherwise, it is downloaded over http as it normally would be.
 
