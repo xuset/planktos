@@ -10,11 +10,11 @@
    </a>
 </p>
 
-Planktos enables websites to serve their static content over BitTorrent by turning users into seeders. This allows website owners to almost entirely eliminate hosting costs for static content and scale in realtime without provisioning more web servers. Planktos works in vanilla Chrome and Firefox (no browser extensions needed), using the widely adopted WebRTC standard for peer to peer file transfers. Planktos serves as a drop in tool to automatically allow files to be loaded over BitTorrent when possible, defaulting to the web server when not.
+Planktos enables websites to serve their static content over BitTorrent by turning users into seeders. This allows website owners to significantly reduce hosting costs for static content and scale in realtime without provisioning more web servers. Planktos works in vanilla Chrome and Firefox (no browser extensions needed), using [WebTorrent](https://webtorrent.io) for peer to peer file transfers. Planktos serves as a drop in tool to automatically allow files to be downloaded over BitTorrent when possible, defaulting to the web server when not.
 
 Installing Planktos into a website is as simple as including the Planktos install script and using the Planktos command line interface to bundle your static files into a torrent.
 
-A special thanks to the [WebTorrent](https://webtorrent.io) project, which we use to interface with torrents from the browser.
+A special thanks to the [WebTorrent](https://webtorrent.io) project, which is used extensively in Planktos.
 
 ## Setup
 
@@ -26,17 +26,17 @@ Now change your current working directory to the directory you want to be served
 
 `planktos --lib-only`
 
-The Planktos service worker, which intercepts network calls, needs to be registered, which can be done by including this script:      
+The Planktos service worker, which intercepts network calls, needs to be registered by including the install script or registering the service worker manually:
 
 `<script src="/planktos/install.js"></script>`
 
-Finally, the website files need to be packaged into a torrent, so they can be served over BitTorrent. To package all files into a torrent run:
+Finally, the website files need to be packaged into a torrent, so they can be served over BitTorrent. To selectively package files into a torrent run:
 
-`planktos [directories and/or files]`
+`planktos [directories and/or files...]`
 
 NOTE: If no files or directories are passed in, Planktos packages everything in the current working directory.
 
-That was it. To test that everything is working as expected, use devtools to inspect the network requests. To update files simply run the Planktos command again.
+That was it. To test that everything is working as expected, use the browser's devtools to inspect the network requests. To update files simply run the Planktos command again.
 
 Requirements for Planktos Websites:
  * The site must be served over https (or http on localhost), because service workers have restrictions on which types of sites can register them
@@ -44,16 +44,14 @@ Requirements for Planktos Websites:
 
 ## How it Works
 
-The Planktos CLI bundles all of the website's static assets into a torrent (`/planktos/root.torrent` and `/planktos/[file_hash]`), maps file paths to the their respective hashes (`/planktos/manifest.json`), and copies the necessary Planktos library files.
+The Planktos CLI copies the website's static assets to `/planktos/[file_hash]` and packages those files into a torrent at `/planktos/root.torrent`. The CLI then generates a manifest that maps file paths to the their respective hashes, and is stores it at `/planktos/manifest.json`. Finally the CLI copies the Planktos library files including the service worker.
 
-When the webpage is loaded, Planktos installs a service worker that intercepts all http requests made by the webpage. When a request is intercepted, Planktos checks to see if the requested file is in the torrent. If the file is in the torrent, it is downloaded from peers, otherwise, it is loaded over http as it normally would be.
+When the webpage is loaded, Planktos installs a service worker that intercepts all http requests made by the webpage. When a request is intercepted, Planktos checks to see if the requested file is in the torrent. If the file is in the torrent, it is downloaded from peers, otherwise, it is downloaded over http as it normally would be.
 
-Due to the fact that service workers cannot use the [WebRTC](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API) API, the actual downloading of torrents must be delegated to the initial webpage. Planktos accomplishes this by injecting a downloader script into the initial webpage which is notified via the Broadcast Channel API when a fetch request is intercepted. See the [W3C issue](https://github.com/w3c/webrtc-pc/issues/230) for more info on WebRTC in service workers.
+Due to the fact that service workers cannot use the [WebRTC](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API) API, the actual downloading of torrents is delegated to a Planktos controlled webpage. Planktos accomplishes this by injecting a downloader script into the webpage when the fetch request is intercepted. See the [W3C issue](https://github.com/w3c/webrtc-pc/issues/230) for more info on WebRTC in service workers.
 
 NOTE: If the browser does not have service worker support then everything goes over http like it would without
 Planktos.
-
-Planktos uses the awesome [WebTorrent](https://github.com/feross/webtorrent) project for everything BitTorrent.
 
 Planktos is still in early stages of development, and is not recommended for production use yet. Some blocking issues include:
  * Planktos cannot selectively download files within a torrent, so the entire torrent is downloaded. This doesn't matter for small sites, but it will not work for larger sites.
@@ -69,7 +67,7 @@ To hack on Planktos, this process seems to work well:
 * `./bin/server.js example` will start an http server that will serve the example directory files
 * Now you can open `http://localhost:8080` in the browser to make sure that everything works. Automated tests coming soon!
 
-Keep in mind that for changes to be reflected you'll have to unregister or update the existing Planktos service worker and refresh. You can delete all locally stored data and unregister service workers using developer tools.
+Keep in mind that for changes to be reflected you'll have to unregister or update the existing Planktos service worker and refresh. You can delete all locally stored data and unregister service workers using the browser's developer tools.
 
 ## License
 
