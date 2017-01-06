@@ -10,11 +10,11 @@
    </a>
 </p>
 
-Planktos enables websites to serve their static content over BitTorrent by turning users into seeders. This allows website owners to almost entirely eliminate hosting costs for static content and scale in realtime without provisioning more web servers. Planktos works in vanilla Chrome and Firefox (no browser extensions needed), using the widely adopted WebRTC standard for peer to peer file transfers.
+Planktos enables websites to serve their static content over BitTorrent by turning users into seeders. This allows website owners to almost entirely eliminate hosting costs for static content and scale in realtime without provisioning more web servers. Planktos works in vanilla Chrome and Firefox (no browser extensions needed), using the widely adopted WebRTC standard for peer to peer file transfers. Planktos serves as a drop in tool to automatically allow files to be loaded over BitTorrent when possible, defaulting to the web server when not.
 
 Installing Planktos into a website is as simple as including the Planktos install script and using the Planktos command line interface to bundle your static files into a torrent.
 
-A special thanks to the [webtorrent](https://webtorrent.io) project, which we use to interface with torrents from the browser.
+A special thanks to the [WebTorrent](https://webtorrent.io) project, which we use to interface with torrents from the browser.
 
 ## Setup
 
@@ -44,13 +44,20 @@ Requirements for Planktos Websites:
 
 ## How it works
 
-Once the planktos service worker is installed, it intercepts all http requests made by the browser. When a fetch request is intercepted, planktos looks to see if the requested file is in the torrent for the website. If it is, planktos responds with the file's data it retreived over bittorrent. If the requested file is not in the torrent, the request goes to the web server over http like it would without planktos installed. Planktos uses the awesome [webtorrent](https://github.com/feross/webtorrent) project for everything bittorrent. One gotcha you may have noticed is that webtorrent relies on [WebRTC](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API) for it's peer connections, and the WebRTC api is not accessible from within service workers. Planktos gets around this by injecting a downloader script in the initial webpage request which handles all the webtorrent downloading and seeding operations since this cannot be done in a service worker currently. See the [W3C issue](https://github.com/w3c/webrtc-pc/issues/230) for more info on WebRTC in web workers.
+The Planktos CLI bundles all of the website's static assets into a torrent (`/planktos/root.torrent` and `/planktos/[file_hash]`), maps file paths to the their respective hashes (`/planktos/manifest.json`), and copies the necessary Planktos library files.
 
-If the browser does not have service worker support than everything goes over http like it would without planktos.
+When the webpage is loaded, Planktos installs a service worker that intercepts all http requests made by the webpage. When a request is intercepted, Planktos checks to see if the requested file is in the torrent. If the file is in the torrent, it is downloaded from peers, otherwise, it is loaded over http as it normally would be.
 
-Planktos is still early on in development, and is not recommended for production use yet. Some issues that are holding back production use are:
- * Cannot selectively download files within a torrent; the entire torrent is downloaded. This is fine for small sites but this will get out of hand quick with larger sites.
- * No streaming support. The requested file must be downloaded in it's entirety before it can be displayed to the user. Currently only chrome supports streaming from the service worker while Firefox has an [open issue](https://bugzilla.mozilla.org/show_bug.cgi?id=1128959) for it.
+Due to the fact that service workers cannot use the [WebRTC](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API) API, the actual downloading of torrents must be delegated to the initial webpage. Planktos accomplishes this by injecting a downloader script into the initial webpage which is notified via the Broadcast Channel API when a fetch request is intercepted. See the [W3C issue](https://github.com/w3c/webrtc-pc/issues/230) for more info on WebRTC in service workers.
+
+NOTE: If the browser does not have service worker support then everything goes over http like it would without
+Planktos.
+
+Planktos uses the awesome [WebTorrent](https://github.com/feross/webtorrent) project for everything BitTorrent.
+
+Planktos is still in early stages of development, and is not recommended for production use yet. Some blocking issues include:
+ * Planktos cannot selectively download files within a torrent, so the entire torrent is downloaded. This doesn't matter for small sites, but it will not work for larger sites.
+ * No streaming support. The requested file must be downloaded in it's entirety before it can be displayed to the user. Currently, only chrome supports streaming from service workers while Firefox has an [open issue](https://bugzilla.mozilla.org/show_bug.cgi?id=1128959) for it.
 
 ## Developing
 
