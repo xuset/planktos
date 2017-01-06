@@ -42,7 +42,7 @@ Requirements for Planktos Websites:
  * The site must be served over https (or http on localhost), because service workers have restrictions on which types of sites can register them
  * The web server must support the `HTTP Range` header, because the server is used as the initial seeder (see WebTorrent webseed). Most web servers support this feature; however, some, like Python's simplehttpserver, do not.
 
-## How it works
+## How it Works
 
 The Planktos CLI bundles all of the website's static assets into a torrent (`/planktos/root.torrent` and `/planktos/[file_hash]`), maps file paths to the their respective hashes (`/planktos/manifest.json`), and copies the necessary Planktos library files.
 
@@ -61,19 +61,15 @@ Planktos is still in early stages of development, and is not recommended for pro
 
 ## Developing
 
-To hack on planktos, this process seems to work well:
+To hack on Planktos, this process seems to work well:
 
 * `npm run standard` will run the style and syntax checker
 * `npm run bundle` will build the code and store the bundled output in the build directory.
-* `./bin/setup.js -r example` will run the main planktos executable on the example directory
-* `./bin/server.js example` will start a http server that will serve the example directories files
-* Then opening `http://localhost:8080` in a web browser, and making sure everything still works. Automated tests will come soon!
+* `./bin/setup.js -r example` will run the main Planktos executable on the example directory
+* `./bin/server.js example` will start an http server that will serve the example directory files
+* Now you can open `http://localhost:8080` in the browser to make sure that everything works. Automated tests coming soon!
 
-Keep in mind that for changes to be reflected you'll have to unregister or update the existing planktos service worker and refresh. This can be done by simply closing all windows and opening a new window.
-
-Upon updating files served by planktos, the data stored in IndexedDB may no longer be representative of the files that need to be displayed, resulting in errors on page loads. A good workaround for now is to clear all locally stored data in your browser.
-
-To delete locally stored data in Chrome: [cookies and site data](chrome://settings/cookies)
+Keep in mind that for changes to be reflected you'll have to unregister or update the existing Planktos service worker and refresh. You can delete all locally stored data and unregister service workers using developer tools.
 
 ## License
 
