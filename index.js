@@ -62,7 +62,7 @@ function getFileBlob (filePath) {
 
     // If the `filePath` cannot be found in the manifest, try to search for the index file
     let indexFilePathCandidates = ['index.html', 'index.htm'].map((filename) => path.join(filePath, filename))
-    let hash = manifest[filePath] || indexFilePathCandidates.find((fpath) => Object.keys(manifest).includes(fpath))
+    let hash = manifest[filePath] || manifest[indexFilePathCandidates.find((fpath) => Object.keys(manifest).includes(fpath))]
     let fileInfo = torrentMeta.files.find(f => f.name === hash)
 
     if (!fileInfo) {
