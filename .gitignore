@@ -3,3 +3,6 @@ npm-debug.log
 *.swp
 example/planktos.sw.js
 example/planktos
+test/www/planktos.sw.js
+test/www/planktos
+build/test.js
