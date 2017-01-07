@@ -25,6 +25,7 @@ var IdbChunkStore = require('indexdb-chunk-store')
 var IdbKvStore = require('idb-kv-store')
 var toBlob = require('stream-to-blob')
 var parseTorrent = require('parse-torrent-file')
+var path = require('path')
 
 var waitingFetches = {}
 var persistent = new IdbKvStore('planktos')
@@ -48,7 +49,7 @@ function getTorrentMetaBuffer () { // TODO Fix parsing bug so this can be remove
   return persistent.get('torrentMetaBuffer')
 }
 
-function getFileBlob (filename) {
+function getFileBlob (filePath) {
   if (typeof BroadcastChannel === 'undefined') throw new Error('No BroadcastChannel support')
 
   if (!downloadChannel) {
@@ -57,9 +58,12 @@ function getFileBlob (filename) {
   }
 
   return persistent.get(['manifest', 'torrentMeta']).then(result => {
-    var [manifest, torrentMeta] = result
-    var hash = manifest[filename]
-    var fileInfo = torrentMeta.files.find(f => f.name === hash)
+    let [manifest, torrentMeta] = result
+
+    // If the `filePath` cannot be found in the manifest, try to search for the index file
+    let indexFilePathCandidates = ['index.html', 'index.htm'].map((filename) => path.join(filePath, filename))
+    let hash = manifest[filePath] || manifest[indexFilePathCandidates.find((fpath) => Object.keys(manifest).includes(fpath))]
+    let fileInfo = torrentMeta.files.find(f => f.name === hash)
 
     if (!fileInfo) {
       return Promise.reject(new Error('File not found'))
@@ -69,7 +73,7 @@ function getFileBlob (filename) {
 
     return downloaded.get(hash).then(isDownloaded => {
       if (isDownloaded) {
-        var stream = ChunkStream.read(chunkStore, chunkStore.chunkLength, {
+        let stream = ChunkStream.read(chunkStore, chunkStore.chunkLength, {
           length: torrentMeta.length
         })
         return new Promise(function (resolve, reject) {
@@ -130,10 +134,10 @@ function onDownload () {
     var [manifest, downloaded] = result
     for (var hash in downloaded) {
       if (hash in waitingFetches) {
-        var filename = Object.keys(manifest).find(fname => manifest[fname] === hash)
+        var filePath = Object.keys(manifest).find(fname => manifest[fname] === hash)
         var waiters = waitingFetches[hash]
         delete waitingFetches[hash]
-        getFileBlob(filename)
+        getFileBlob(filePath)
         .then(b => {
           for (var p of waiters) {
             p(b)

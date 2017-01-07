@@ -23,7 +23,6 @@ function onFetch (event) {
 
   if (url.host !== global.location.host || event.request.method !== 'GET') return
   if (planktos.preCached.indexOf('/' + name) === -1 && name.startsWith('planktos/')) return
-  if (name === '') name = 'index.html' // TODO handle case when file is not top level
 
   assignDelegator()
 
