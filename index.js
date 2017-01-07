@@ -25,6 +25,7 @@ var IdbChunkStore = require('indexdb-chunk-store')
 var IdbKvStore = require('idb-kv-store')
 var toBlob = require('stream-to-blob')
 var parseTorrent = require('parse-torrent-file')
+var path = require('path')
 
 var waitingFetches = {}
 var persistent = new IdbKvStore('planktos')
@@ -57,39 +58,12 @@ function getFileBlob (filePath) {
   }
 
   return persistent.get(['manifest', 'torrentMeta']).then(result => {
-    var [manifest, torrentMeta] = result
+    let [manifest, torrentMeta] = result
 
-    let getFilename = (filePath) => filePath.slice(filePath.lastIndexOf('/') + 1)
-    let filePathIsDir = (filePath) => filePath.endsWith('/')
-    let filenameHasExtension = (filename) => filename.indexOf('.') !== -1
-
-    // Try to coerce extension-less files into directories
-    if (!filePathIsDir(filePath) && !filenameHasExtension(getFilename(filePath))) {
-      // Since directories are not stored in the manifest, we can only safely assume an extension-less
-      // file is a diretory if (1) the file isn't in the manifest and (2) there are files which
-      // are in subdirectories relative to the file path
-      if (Object.keys(manifest).indexOf(filePath) === -1 &&
-          Object.keys(manifest).find((fpath) => fpath.startsWith(filePath + '/'))) {
-        filePath += '/'
-      }
-    }
-
-    // Try to find an index file if `filePath` is a directory
-    if (filePathIsDir(filePath)) {
-      let filesInDirectory = Object.keys(manifest).filter(
-        (fpath) => fpath.startsWith(filePath)
-      ).map(getFilename)
-
-      // Index files are listed in order of priority
-      let indexFilename = ['index.html', 'index.htm'].find((fname) => filesInDirectory.includes(fname))
-
-      if (indexFilename === undefined) throw new Error('File not found')
-
-      filePath += indexFilename
-    }
-
-    var hash = manifest[filePath]
-    var fileInfo = torrentMeta.files.find(f => f.name === hash)
+    // If the `filePath` cannot be found in the manifest, try to search for the index file
+    let indexFilePathCandidates = ['index.html', 'index.htm'].map((filename) => path.join(filePath, filename))
+    let hash = manifest[filePath] || indexFilePathCandidates.find((fpath) => Object.keys(manifest).includes(fpath))
+    let fileInfo = torrentMeta.files.find(f => f.name === hash)
 
     if (!fileInfo) {
       return Promise.reject(new Error('File not found'))
@@ -99,7 +73,7 @@ function getFileBlob (filePath) {
 
     return downloaded.get(hash).then(isDownloaded => {
       if (isDownloaded) {
-        var stream = ChunkStream.read(chunkStore, chunkStore.chunkLength, {
+        let stream = ChunkStream.read(chunkStore, chunkStore.chunkLength, {
           length: torrentMeta.length
         })
         return new Promise(function (resolve, reject) {
