@@ -10,7 +10,7 @@
    </a>
 </p>
 
-Planktos enables websites to serve their static content over BitTorrent by turning users into seeders. This allows website owners to significantly reduce hosting costs for static content and scale in realtime without provisioning more web servers. Planktos works in vanilla Chrome and Firefox (no browser extensions needed), using [WebTorrent](https://webtorrent.io) for peer to peer file transfers. Planktos serves as a drop in tool to automatically allow files to be downloaded over BitTorrent when possible, defaulting to the web server when not.
+Planktos enables websites to serve their static content over BitTorrent by turning users into seeders. This allows website owners to significantly reduce hosting costs for static content and scale in realtime without provisioning more web servers. Planktos works in vanilla Chrome and Firefox (no browser extensions needed), using [WebTorrent](https://webtorrent.io) for peer to peer file transfers. Planktos serves as a drop in tool to automatically allow files to be downloaded over BitTorrent when possible, defaulting to a web server when not.
 
 Installing Planktos into a website is as simple as including the Planktos install script and using the Planktos command line interface to bundle your static files into a torrent.
 
@@ -36,15 +36,15 @@ Finally, the website files need to be packaged into a torrent, so they can be se
 
 NOTE: If no files or directories are passed in, Planktos packages everything in the current working directory.
 
-That was it. To test that everything is working as expected, use the browser's devtools to inspect the network requests. To update files simply run the Planktos command again.
+That was it. To test that everything is working as expected, use your browser's devtools to inspect the network requests your website makes. To update files simply run the Planktos command again.
 
 Requirements for Planktos Websites:
  * The site must be served over https (or http on localhost), because service workers have restrictions on which types of sites can register them
- * The web server must support the `HTTP Range` header, because the server is used as the initial seeder (see WebTorrent webseed). Most web servers support this feature; however, some, like Python's simplehttpserver, do not.
+ * The web server must support the `HTTP Range` header, because the server is used as the initial seeder (see WebTorrent webseed). Most web servers support this feature; however, some, like Python's _simplehttpserver_, do not.
 
 ## How it Works
 
-The Planktos CLI copies the website's static assets to `/planktos/[file_hash]` and packages those files into a torrent at `/planktos/root.torrent`. The CLI then generates a manifest that maps file paths to the their respective hashes, and stores it at `/planktos/manifest.json`. Finally the CLI copies the Planktos library files including the service worker.
+The Planktos CLI copies the website's static assets to `/planktos/[file_hash]` and packages those files into a torrent at `/planktos/root.torrent`. The CLI then generates a manifest that maps file paths to the their respective hashes, and stores it at `/planktos/manifest.json`. Finally, the CLI copies the Planktos library files including the service worker.
 
 When the webpage is loaded, Planktos installs a service worker that intercepts all http requests made by the webpage. When a request is intercepted, Planktos checks to see if the requested file is in the torrent. If the file is in the torrent, it is downloaded from peers, otherwise, it is downloaded over http as it normally would be.
 
@@ -65,7 +65,7 @@ To hack on Planktos, this process seems to work well:
 * `npm run bundle` will build the code and store the bundled output in the build directory.
 * `./bin/setup.js -r example` will run the main Planktos executable on the example directory
 * `./bin/server.js example` will start an http server that will serve the example directory files
-* Now you can open `http://localhost:8080` in the browser to make sure that everything works. Automated tests coming soon!
+* Now you can open `http://localhost:8080` in the browser to make sure that everything works.
 
 Keep in mind that for changes to be reflected you'll have to unregister or update the existing Planktos service worker and refresh. You can delete all locally stored data and unregister service workers using the browser's developer tools.
 
