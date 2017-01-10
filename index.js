@@ -21,7 +21,7 @@ module.exports.getTorrentMetaBuffer = getTorrentMetaBuffer
 module.exports.downloader = require('./lib/downloader')
 
 var ChunkStream = require('chunk-store-stream')
-var IdbChunkStore = require('indexdb-chunk-store')
+var IdbChunkStore = require('indexeddb-chunk-store')
 var IdbKvStore = require('idb-kv-store')
 var toBlob = require('stream-to-blob')
 var parseTorrent = require('parse-torrent-file')
