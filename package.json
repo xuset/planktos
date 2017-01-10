@@ -7,14 +7,14 @@
   "dependencies": {
     "chunk-store-stream": "^2.0.2",
     "create-torrent": "^3.25.1",
-    "debug": "2.4.4",
-    "idb-kv-store": "^2.2.2",
+    "debug": "^2.6.0",
+    "idb-kv-store": "^3.0.0",
     "indexeddb-chunk-store": "^2.0.0",
     "minimist": "^1.2.0",
     "parse-torrent-file": "^4.0.0",
     "run-parallel-limit": "^1.0.3",
     "stream-to-blob": "^1.0.0",
-    "webtorrent": "^0.97.2"
+    "webtorrent": "^0.98.0"
   },
   "devDependencies": {
     "browserify": "^13.1.1",
