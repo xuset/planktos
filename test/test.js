@@ -1,12 +1,17 @@
+/* eslint-env mocha */
+
 var assert = require('assert')
 var planktos = require('../')
+var parseTorrent = require('parse-torrent-file')
 
 describe('sanity check', function () {
   this.timeout(20000)
-  it('end-to-end', function (done) {
-    var base = '/base/test/www/'
-    var iframe = null
-    loadIframe(base)
+
+  var base = '/base/test/www/'
+  var iframe = null
+
+  before(function () {
+    return loadIframe(base + 'index.html')
     .then(elem => {
       // register the service worker in the iframe and wait for it to activate
       iframe = elem
@@ -15,33 +20,68 @@ describe('sanity check', function () {
     })
     .then(() => new Promise(function (resolve) {
       // refresh the iframe and wait for the page to be loaded
+      // This ensures the service worker is controlling the page
       iframe.onload = function () {
         resolve()
       }
       iframe.contentWindow.location.reload()
     }))
-    .then(() => planktos.getFileBlob('foobar.txt'))
+  })
+
+  it('service worker controls page', function () {
+    assert.notEqual(iframe.contentWindow.navigator.serviceWorker.controller, null)
+  })
+
+  it('getManifest()', function () {
+    return planktos.getManifest()
+    .then(manifest => assert('index.html' in manifest))
+  })
+
+  it('getDownloaded()', function () {
+    return planktos.getDownloaded()
+    .then(downloaded => 'index.html' in downloaded)
+  })
+
+  it('getTorrentMeta()', function () {
+    return planktos.getTorrentMeta()
+    .then(torrentMeta => parseTorrent.encode(torrentMeta))
+  })
+
+  it('getTorrentMetaBuffer()', function () {
+    return planktos.getTorrentMetaBuffer()
+    .then(buffer => assert.notEqual(buffer.length, 0))
+  })
+
+  it('getFileBlob()', function () {
+    return planktos.getFileBlob('foobar.txt')
     .then(blob => blobToText(blob))
     .then(text => {
       assert.equal(text, 'foobar\n')
-      return iframe.contentWindow.fetch(base + 'foobar.txt')
     })
+  })
+
+  it('fetch()', function () {
+    return iframe.contentWindow.fetch(base + 'foobar.txt')
     .then(resp => resp.text())
     .then(text => {
       assert.equal(text, 'foobar\n')
-      return planktos.getFileBlob('/foo/')
     })
+  })
+
+  it('getFileBlob() - implied index - with slash', function () {
+    return planktos.getFileBlob('/foo/')
     .then(blob => blobToText(blob))
     .then(text => {
       assert.equal(text, 'bar\n')
-      return planktos.getFileBlob('/foo')
     })
+  })
+
+  it('getFileBlob() - implied index - without slash', function () {
+    return planktos.getFileBlob('/foo')
     .then(blob => blobToText(blob))
     .then(text => {
       assert.equal(text, 'bar\n')
-      done()
     })
-    .catch(err => done(err))
   })
 })
 
