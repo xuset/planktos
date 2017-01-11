@@ -52,8 +52,6 @@
   ],
   "standard": {
     "globals": [
-      "describe",
-      "it",
       "URL",
       "Response",
       "BroadcastChannel",
