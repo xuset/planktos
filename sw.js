@@ -77,7 +77,7 @@ function onMessage (event) {
 }
 
 function assignDelegator () {
-  this.clients.matchAll({type: 'window'}).then(clients => {
+  global.clients.matchAll({type: 'window'}).then(clients => {
     var potentials = clients.filter(c => c.id in available)
     var redelegate = !delegator || !potentials.find(c => c.id === delegator.id)
     if (potentials.length === 0) {
