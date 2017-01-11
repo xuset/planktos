@@ -18,7 +18,7 @@ assignDelegator()
 
 function onFetch (event) {
   var url = new URL(event.request.url)
-  var name = url.pathname.replace(scope, '').substr(1)
+  var name = planktos._normalizePath(url.pathname.replace(scope, ''))
   var search = url.search.substr(1).split('&')
 
   if (url.host !== global.location.host || event.request.method !== 'GET') return

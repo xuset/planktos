@@ -18,6 +18,7 @@ module.exports.getManifest = getManifest
 module.exports.getDownloaded = getDownloaded
 module.exports.getTorrentMeta = getTorrentMeta
 module.exports.getTorrentMetaBuffer = getTorrentMetaBuffer
+module.exports._normalizePath = _normalizePath
 module.exports.downloader = require('./lib/downloader')
 
 var ChunkStream = require('chunk-store-stream')
@@ -57,6 +58,7 @@ function getFileBlob (filePath) {
     downloadChannel.addEventListener('message', onDownload)
   }
 
+  filePath = _normalizePath(filePath)
   return persistent.get(['manifest', 'torrentMeta']).then(result => {
     let [manifest, torrentMeta] = result
 
@@ -146,4 +148,9 @@ function onDownload () {
       }
     }
   })
+}
+
+function _normalizePath (filePath) {
+  if (filePath.startsWith('/')) filePath = filePath.substr(1)
+  return path.normalize(filePath)
 }
