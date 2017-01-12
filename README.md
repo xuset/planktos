@@ -34,7 +34,7 @@ Finally, the website files need to be packaged into a torrent, so they can be se
 
 `planktos [directories and/or files...]`
 
-NOTE: If no files or directories are passed in, Planktos packages everything in the current working directory.
+If no files or directories are passed in, Planktos packages everything in the current working directory.
 
 That was it. To test that everything is working as expected, use your browser's devtools to inspect the network requests your website makes. To update files simply run the Planktos command again.
 
@@ -57,17 +57,19 @@ Planktos is still in early stages of development, and is not recommended for pro
  * Planktos cannot selectively download files within a torrent, so the entire torrent is downloaded. This doesn't matter for small sites, but it will not work for larger sites.
  * No streaming support. The requested file must be downloaded in it's entirety before it can be displayed to the user. Currently, only chrome supports streaming from service workers while Firefox has an [open issue](https://bugzilla.mozilla.org/show_bug.cgi?id=1128959) for it.
 
-## Developing
+## Contribute
 
-To hack on Planktos, this process seems to work well:
+Contributions are welcome!
 
-* `npm run standard` will run the style and syntax checker
-* `npm run bundle` will build the code and store the bundled output in the build directory.
-* `./bin/setup.js -r example` will run the main Planktos executable on the example directory
-* `./bin/server.js example` will start an http server that will serve the example directory files
-* Now you can open `http://localhost:8080` in the browser to make sure that everything works.
+Once you have some changes, you can test them with:
 
-Keep in mind that for changes to be reflected you'll have to unregister or update the existing Planktos service worker and refresh. You can delete all locally stored data and unregister service workers using the browser's developer tools.
+`npm test`
+
+Or to automatically run the tests when the files are changed:
+
+`npm run watch`
+
+When the tests are running in the browser, if the browser is not focused it will sometimes pause the javascript code execution causing tests to timeout. Also, when pushing commits please do not include the `build` directory.
 
 ## License
 
