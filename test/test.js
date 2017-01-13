@@ -1,7 +1,7 @@
 /* eslint-env mocha */
+/* global planktos */
 
 var assert = require('assert')
-var planktos = require('../')
 var parseTorrent = require('parse-torrent-file')
 
 describe('sanity check', function () {
@@ -15,7 +15,7 @@ describe('sanity check', function () {
     .then(elem => {
       // register the service worker in the iframe and wait for it to activate
       iframe = elem
-      iframe.contentWindow.navigator.serviceWorker.register(base + 'planktos.sw.js')
+      iframe.contentWindow.navigator.serviceWorker.register(base + 'planktos.sw.min.js')
       return iframe.contentWindow.navigator.serviceWorker.ready
     })
     .then(() => new Promise(function (resolve) {
