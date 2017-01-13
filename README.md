@@ -69,7 +69,7 @@ Or to automatically run the tests when the files are changed:
 
 `npm run watch`
 
-When the tests are running in the browser, if the browser is not focused it will sometimes pause the javascript code execution causing tests to timeout. Also, when pushing commits please do not include the `build` directory.
+When the tests are running in the browser, if the browser is not focused it will sometimes pause the javascript code execution causing tests to timeout.
 
 ## License
 
