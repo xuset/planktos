@@ -18,8 +18,10 @@ function copyLib (rootDir) {
   var dstDir = rootDir + '/' + RESERVED_DIR
   if (!fs.existsSync(dstDir)) fs.mkdirSync(dstDir)
   copyFile(__dirname + '/../install.js', dstDir + '/install.js')
-  copyFile(__dirname + '/../build/planktos.js', dstDir + '/planktos.js')
-  copyFile(__dirname + '/../build/planktos.sw.js', rootDir + '/planktos.sw.js')
+  copyFile(__dirname + '/../build/planktos.min.js', dstDir + '/planktos.min.js')
+  copyFile(__dirname + '/../build/planktos.min.js.map', dstDir + '/planktos.min.js.map')
+  copyFile(__dirname + '/../build/planktos.sw.min.js', rootDir + '/planktos.sw.min.js')
+  copyFile(__dirname + '/../build/planktos.sw.min.js.map', rootDir + '/planktos.sw.min.js.map')
 }
 
 function setup (rootDir, includes, webseedUrls) {
@@ -59,7 +61,6 @@ function writeManifest (srcDir, dstDir, mappings) {
   for (var map of mappings) {
     relMappings[map.src.substr(srcDir.length + 1)] = map.dst.substr(dstDir.length + 1)
   }
-  // console.log('MANIFEST', mappings, relMappings)
   var buff = new Buffer(JSON.stringify(relMappings))
   fs.writeFileSync(dstDir + '/manifest.json', buff)
 }
