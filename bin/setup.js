@@ -36,12 +36,14 @@ function setup (rootDir, includes, webseedUrls) {
   copyAsHash(rootDir, includes, dstDir, function (err, mappings) {
     if (err) throw err
 
+    var torrentFiles = mappings.map(e => e.dst)
+
+    // Note that the options should include the name of the file if only one was specified
     var opts = {
       urlList: webseedUrls,
-      name: RESERVED_DIR
+      name: torrentFiles.length == 1 ? torrentFiles[0] : RESERVED_DIR
     }
 
-    var torrentFiles = mappings.map(e => e.dst)
     createTorrent(torrentFiles, opts, function (err, torrent) {
       if (err) throw err
 
