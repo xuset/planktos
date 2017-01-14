@@ -18,6 +18,7 @@
   },
   "devDependencies": {
     "browserify": "^13.1.1",
+    "exorcist": "^0.4.0",
     "express": "^4.14.0",
     "karma": "^1.3.0",
     "karma-chrome-launcher": "^2.0.0",
@@ -26,18 +27,17 @@
     "karma-sauce-launcher": "^1.1.0",
     "mocha": "^3.2.0",
     "nodemon": "^1.11.0",
-    "standard": "^8.6.0"
+    "standard": "^8.6.0",
+    "uglify-js": "git://github.com/mishoo/UglifyJS2.git#harmony-v2.7.5"
   },
   "scripts": {
     "standard": "standard",
-    "bundle-sw": "browserify sw.js --ignore webtorrent -o build/planktos.sw.js --debug",
-    "bundle-lib": "browserify index.js -s planktos -o build/planktos.js --debug",
-    "bundle-tests": "browserify test/test.js -o build/test.js --debug",
-    "bundle": "npm run -s bundle-lib && npm run -s bundle-sw && npm run -s bundle-tests",
-    "test-pre": "standard && npm run -s bundle && ./bin/setup.js -r test/www",
-    "test": "npm run -s test-pre && karma start",
+    "bundle": "./bin/build.sh",
+    "pre-test": "standard && ./bin/build.sh && ./bin/setup.js -r test/www",
+    "test": "npm run -s pre-test && karma start",
     "watch": "nodemon --exec 'npm test'",
-    "test-ci": "npm run -s test-pre && ./node_modules/.bin/parse-torrent test/www/planktos/root.torrent && karma start karma.ci.conf.js"
+    "test-ci": "npm run -s pre-test && ./node_modules/.bin/parse-torrent test/www/planktos/root.torrent && karma start karma.ci.conf.js",
+    "prepublish": "standard && ./bin/build.sh"
   },
   "repository": {
     "type": "git",

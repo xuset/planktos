@@ -7,5 +7,7 @@ example/planktos.sw.min.js
 test/www/planktos
 test/www/planktos.sw.min.js
 
-# Do not include in .npmignore
-build
+# Different from .gitignore
+build/planktos.js
+build/planktos.sw.js
+build/test.js
