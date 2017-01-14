@@ -41,7 +41,7 @@ function setup (rootDir, includes, webseedUrls) {
     // Note that the options should include the name of the file if only one was specified
     var opts = {
       urlList: webseedUrls,
-      name: torrentFiles.length == 1 ? torrentFiles[0] : RESERVED_DIR
+      name: torrentFiles.length === 1 ? torrentFiles[0] : RESERVED_DIR
     }
 
     createTorrent(torrentFiles, opts, function (err, torrent) {
