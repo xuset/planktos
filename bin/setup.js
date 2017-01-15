@@ -4,12 +4,12 @@ module.exports = setup
 
 /* eslint no-path-concat: "off" */
 
-var fs = require('fs')
 var path = require('path')
-var parallelLimit = require('run-parallel-limit')
-var crypto = require('crypto')
 var createTorrent = require('create-torrent')
+var crypto = require('crypto')
+var fs = require('fs')
 var minimist = require('minimist')
+var parallelLimit = require('run-parallel-limit')
 
 var RESERVED_DIR = 'planktos'
 
@@ -38,12 +38,15 @@ function setup (rootDir, includes, webseedUrls) {
   copyAsHash(rootDir, includes, dstDir, function (err, mappings) {
     if (err) throw err
 
+    var torrentFiles = mappings.map(e => absPath(e.dst))
+
+    // From BitTorrent Documentation: "In the single file case, the name key is the name of
+    // a file, in the multiple file case, it's the name of a directory."
     var opts = {
       urlList: webseedUrls,
-      name: RESERVED_DIR
+      name: torrentFiles.length === 1 ? '/planktos/' + torrentFiles[0].slice(torrentFiles[0].lastIndexOf('/') + 1) : RESERVED_DIR
     }
 
-    var torrentFiles = mappings.map(e => e.dst)
     createTorrent(torrentFiles, opts, function (err, torrent) {
       if (err) throw err
 
