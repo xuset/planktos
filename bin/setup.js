@@ -50,6 +50,7 @@ function setup (rootDir, includes, webseedUrls) {
       copyLib(rootDir)
       fs.writeFileSync(dstDir + '/root.torrent', torrent)
       writeManifest(rootDir, dstDir, mappings)
+      console.error('Successfully created torrent')
     })
   })
 }
@@ -109,8 +110,6 @@ function copyFile (srcFile, dstFile, flags, cb) {
   if (!cb) cb = noop
   var read = fs.createReadStream(srcFile)
   var write = fs.createWriteStream(dstFile, {flags: flags})
-
-  console.log('COPY', srcFile, '->', dstFile)
 
   read.on('error', function (err) {
     cb(err)
@@ -175,10 +174,10 @@ if (require.main === module) {
       h: 'help',
       r: 'root',
       w: 'webseed',
-      c: 'copy-only'
+      l: 'lib-only'
     },
     boolean: [
-      'copy-only'
+      'lib-only'
     ]
   })
   if (argv.help) {
