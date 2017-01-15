@@ -4,10 +4,23 @@
   </a>
   Planktos
 </h1>
+
 <p align="center">
-   <a href="https://www.npmjs.com/package/planktos">
-     <img src="https://badge.fury.io/js/planktos.svg" alt="npm version" height="18">
-   </a>
+  <a href="https://travis-ci.org/xuset/planktos">
+    <img alt="Build Status" src="https://travis-ci.org/xuset/planktos.svg?branch=master">
+  </a>
+  <a href="https://npmjs.org/package/planktos">
+    <img alt="NPM" src="https://img.shields.io/npm/v/planktos.svg">
+  </a>
+  <a href="https://www.paypal.me/xuset">
+    <img alt="Donate" src="https://img.shields.io/badge/Donate-PayPal-green.svg">
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://saucelabs.com/u/xuset-planktos">
+    <img alt="Sauce Test Status" src="https://saucelabs.com/browser-matrix/xuset-planktos.svg">
+  </a>
 </p>
 
 Planktos enables websites to serve their static content over BitTorrent by turning users into seeders. This allows website owners to significantly reduce hosting costs for static content and scale in realtime without provisioning more web servers. Planktos works in vanilla Chrome and Firefox (no browser extensions needed), using [WebTorrent](https://webtorrent.io) for peer to peer file transfers. Planktos serves as a drop in tool to automatically allow files to be downloaded over BitTorrent when possible, defaulting to a web server when not.
