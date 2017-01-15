@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
-var express = require('express')
-var minimist = require('minimist')
-var path = require('path')
+const express = require('express')
+const minimist = require('minimist')
+const path = require('path')
 
-var argv = minimist(process.argv.slice(2))
-var app = express()
+const argv = minimist(process.argv.slice(2))
+let app = express()
 
-var root = argv['_'][0] || process.cwd()
-var port = argv.p || 8080
+let root = argv['_'][0] || process.cwd()
+const port = argv.p || 8080
 
 if (!path.isAbsolute(root)) root = process.cwd() + '/' + root
 
