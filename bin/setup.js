@@ -10,52 +10,59 @@ const parallelLimit = require('run-parallel-limit')
 const crypto = require('crypto')
 const createTorrent = require('create-torrent')
 const minimist = require('minimist')
+const FS_CONCURRENCY = 2
 
 const RESERVED_DIR = 'planktos'
 
-function copyLib (rootDir) {
+function copyLib (rootDir, cb) {
   rootDir = absPath(rootDir)
   const dstDir = rootDir + '/' + RESERVED_DIR
   if (!fs.existsSync(dstDir)) fs.mkdirSync(dstDir)
-  copyFile(__dirname + '/../install.js', dstDir + '/install.js')
-  copyFile(__dirname + '/../build/planktos.min.js', dstDir + '/planktos.min.js')
-  copyFile(__dirname + '/../build/planktos.min.js.map', dstDir + '/planktos.min.js.map')
-  copyFile(__dirname + '/../build/planktos.sw.min.js', rootDir + '/planktos.sw.min.js')
-  copyFile(__dirname + '/../build/planktos.sw.min.js.map', rootDir + '/planktos.sw.min.js.map')
+  const tasks = [
+    [__dirname + '/../install.js', dstDir + '/install.js'],
+    [__dirname + '/../build/planktos.min.js', dstDir + '/planktos.min.js'],
+    [__dirname + '/../build/planktos.min.js.map', dstDir + '/planktos.min.js.map'],
+    [__dirname + '/../build/planktos.sw.min.js', rootDir + '/planktos.sw.min.js'],
+    [__dirname + '/../build/planktos.sw.min.js.map', rootDir + '/planktos.sw.min.js.map']
+  ].map(t => { return cb => copyFile(t[0], t[1], cb) })
+  parallelLimit(tasks, FS_CONCURRENCY, cb)
 }
 
-function setup (rootDir, includes, webseedUrls) {
+function setup (rootDir, includes, opts, cb) {
+  if (typeof opts === 'function') return setup(rootDir, includes, null, opts)
+  cb = cb || noop
   rootDir = absPath(rootDir)
   includes = includes.map(p => absPath(p))
   const dstDir = rootDir + '/' + RESERVED_DIR
+  if (!opts) opts = {}
 
   if (includes.find(f => !isNested(rootDir, f))) {
-    throw new Error('Included files must be inside the root directory')
+    return cb(new Error('Included files must be inside the root directory'))
   }
 
   if (!fs.existsSync(dstDir)) fs.mkdirSync(dstDir)
 
   copyAsHash(rootDir, includes, dstDir, function (err, mappings) {
-    if (err) throw err
+    if (err) return cb(err)
 
-    let opts = {
-      urlList: webseedUrls,
-      name: RESERVED_DIR
-    }
+    // Webseeds require torrent name to be the directory name that the files are in
+    opts.name = RESERVED_DIR
 
     let torrentFiles = mappings.map(e => e.dst)
     createTorrent(torrentFiles, opts, function (err, torrent) {
-      if (err) throw err
+      if (err) return cb(err)
 
-      copyLib(rootDir)
-      fs.writeFileSync(dstDir + '/root.torrent', torrent)
-      writeManifest(rootDir, dstDir, mappings)
-      console.error('Successfully created torrent')
+      copyLib(rootDir, function (err) {
+        if (err) return cb(err)
+        fs.writeFileSync(dstDir + '/root.torrent', torrent)
+        writeManifestSync(rootDir, dstDir, mappings)
+        cb(null)
+      })
     })
   })
 }
 
-function writeManifest (srcDir, dstDir, mappings) {
+function writeManifestSync (srcDir, dstDir, mappings) {
   let relMappings = {}
   for (let map of mappings) {
     relMappings[map.src.substr(srcDir.length + 1)] = map.dst.substr(dstDir.length + 1)
@@ -74,7 +81,7 @@ function copyAsHash (rootDir, srcList, dstDir, cb) {
   let tasks = files.map(fname => {
     return function (cc) { copyFileAsHash(fname, dstDir, cc) }
   })
-  parallelLimit(tasks, 2, cb)
+  parallelLimit(tasks, FS_CONCURRENCY, cb)
 }
 
 function getHash (src, cb) {
@@ -106,7 +113,7 @@ function copyFileAsHash (srcFile, dstDir, cb) {
 }
 
 function copyFile (srcFile, dstFile, flags, cb) {
-  if (typeof flags === 'function') return copyFile(srcFile, dstFile, null, flags)
+  if (typeof flags === 'function') return copyFile(srcFile, dstFile, undefined, flags)
   if (!cb) cb = noop
   let read = fs.createReadStream(srcFile)
   let write = fs.createWriteStream(dstFile, {flags: flags})
@@ -186,8 +193,19 @@ if (require.main === module) {
   }
   const rootDir = argv.root || process.cwd()
   const includes = argv['_'].length === 0 ? [rootDir] : argv['_']
-  const webseedUrls = argv.webseed
+  const opts = {
+    urlList: argv.webseed
+  }
 
-  if (argv['lib-only']) copyLib(rootDir)
-  else setup(rootDir, includes, webseedUrls)
+  if (argv['lib-only']) {
+    copyLib(rootDir, function (err) {
+      if (err) throw err
+      console.log('Successfully copied lib')
+    })
+  } else {
+    setup(rootDir, includes, opts, function (err) {
+      if (err) throw err
+      console.log('Successfully created torrent')
+    })
+  }
 }

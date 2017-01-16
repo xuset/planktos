@@ -34,9 +34,9 @@
     "standard": "standard",
     "bundle": "./bin/build.sh",
     "pre-test": "standard && ./bin/build.sh && ./bin/setup.js -r test/www",
-    "test": "npm run -s pre-test && karma start",
+    "test": "npm run -s pre-test && mocha test/testCli.js && karma start",
     "watch": "nodemon --exec 'npm test'",
-    "test-ci": "npm run -s pre-test && ./node_modules/.bin/parse-torrent test/www/planktos/root.torrent && karma start karma.ci.conf.js",
+    "test-ci": "npm run -s pre-test && mocha test/testCli.js && karma start karma.ci.conf.js",
     "prepublish": "standard && ./bin/build.sh"
   },
   "repository": {
