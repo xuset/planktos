@@ -10,6 +10,7 @@ const parallelLimit = require('run-parallel-limit')
 const crypto = require('crypto')
 const createTorrent = require('create-torrent')
 const minimist = require('minimist')
+const packageJson = require('../package.json')
 const FS_CONCURRENCY = 2
 
 const RESERVED_DIR = 'planktos'
@@ -166,13 +167,19 @@ function noop () {
 }
 
 function printHelp () {
-  console.error(process.argv[1], '[options] [file or directory...]')
+  let filename = process.argv[1].substr(1 + process.argv[1].lastIndexOf('/'))
+  console.error(filename, '[options] [file or directory...]')
   console.error('')
-  console.error('Copies the planktos files into the current working directory and packages the given files and directories into a torrent.')
+  console.error('Copies the planktos files into the current working directory and packages the')
+  console.error('given files and directories into a torrent.')
   console.error('')
-  console.error('-r,--root DIR      root directory. All given files and directories must be descendents of the root. Default: cwd')
-  console.error('-w,--webseed URL   web seed url to include in the generated torrent. Default: none')
-  console.error('-l,--lib-only      only copy the planktos library and service worker. This does not generate the torrent')
+  console.error('-r,--root DIR      root directory. All given files and directories must be')
+  console.error('                   descendents of the root. Default: cwd')
+  console.error('-w,--webseed URL   web seed url to include in the generated torrent.')
+  console.error('                   Default: none')
+  console.error('-l,--lib-only      only copy the planktos library and service worker. This')
+  console.error('                   does not generate the torrent')
+  console.error('-v,--version       print the version and exit')
 }
 
 if (require.main === module) {
@@ -181,10 +188,12 @@ if (require.main === module) {
       h: 'help',
       r: 'root',
       w: 'webseed',
-      l: 'lib-only'
+      l: 'lib-only',
+      v: 'version'
     },
     boolean: [
-      'lib-only'
+      'lib-only',
+      'version'
     ]
   })
   if (argv.help) {
@@ -202,6 +211,8 @@ if (require.main === module) {
       if (err) throw err
       console.log('Successfully copied lib')
     })
+  } else if (argv.version) {
+    console.log('v' + packageJson.version)
   } else {
     setup(rootDir, includes, opts, function (err) {
       if (err) throw err
