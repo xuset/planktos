@@ -44,7 +44,7 @@ function setup (rootDir, includes, webseedUrls) {
     // a file, in the multiple file case, it's the name of a directory."
     let opts = {
       urlList: webseedUrls,
-      name: torrentFiles.length === 1 ? '/planktos/' + torrentFiles[0].slice(torrentFiles[0].lastIndexOf('/') + 1) : RESERVED_DIR
+      name: torrentFiles.length === 1 ? torrentFiles[0].slice(torrentFiles[0].lastIndexOf('/') + 1) : RESERVED_DIR
     }
 
     createTorrent(torrentFiles, opts, function (err, torrent) {
