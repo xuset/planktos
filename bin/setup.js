@@ -46,15 +46,19 @@ function setup (rootDir, includes, opts, cb) {
   copyAsHash(rootDir, includes, dstDir, function (err, mappings) {
     if (err) return cb(err)
 
-    // Webseeds require torrent name to be the directory name that the files are in
-    opts.name = RESERVED_DIR
+    let torrentFiles = mappings.map(e => absPath(e.dst))
 
-    let torrentFiles = mappings.map(e => e.dst)
+    // From BitTorrent Documentation: "In the single file case, the name key is the name of
+    // a file, in the multiple file case, it's the name of a directory."
+    opts.name = torrentFiles.length === 1
+        ? torrentFiles[0].slice(torrentFiles[0].lastIndexOf('/') + 1) : RESERVED_DIR
+
     createTorrent(torrentFiles, opts, function (err, torrent) {
       if (err) return cb(err)
 
-      copyLib(rootDir, function (err) {
+      copyLib(rootDir, (err) => {
         if (err) return cb(err)
+
         fs.writeFileSync(dstDir + '/root.torrent', torrent)
         writeManifestSync(rootDir, dstDir, mappings)
         cb(null)
