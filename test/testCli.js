@@ -43,6 +43,40 @@ describe('sanity', function () {
   })
 })
 
+describe('single file torrent', function () {
+  const pathToContents = {
+    'foo.txt': 'foobar'
+  }
+
+  it('validate', function (done) {
+    let rootDir = tmpDir()
+
+    createTestDir(rootDir, pathToContents, function (pathToHash) {
+      setup.setup(rootDir, [rootDir], function (err) {
+        assert(err == null, err)
+
+        const makeAbs = (relPath) => path.normalize(rootDir + '/' + relPath)
+        const getContents = (relPath) => fs.readFileSync(makeAbs(relPath))
+
+        let manifest = JSON.parse(getContents('planktos/manifest.json').toString())
+
+        Object.keys(manifest).forEach((relPath) => {
+          assert(manifest[relPath] === pathToHash[relPath])
+        })
+
+        checkTorrent(rootDir, pathToContents, pathToHash)
+
+        assert(getContents('/planktos/' + pathToHash['foo.txt']).equals(new Buffer(pathToContents['foo.txt'])))
+        assert.notEqual(getContents('/planktos/install.js').length, 0)
+        assert.notEqual(getContents('/planktos/planktos.min.js').length, 0)
+        assert.notEqual(getContents('/planktos.sw.min.js').length, 0)
+
+        done()
+      })
+    })
+  })
+})
+
 /********************/
 /* HELPER FUNCTIONS */
 /********************/
@@ -51,8 +85,10 @@ function checkTorrent (rootDir, pathToContents, pathToHash) {
   const torrentMetaPath = rootDir + '/planktos/root.torrent'
   const torrentMeta = parseTorrent(fs.readFileSync(torrentMetaPath))
   const orderedRelFiles = Object.keys(pathToContents).sort()
+  const isSingleFileTorrent = torrentMeta.files.length === 1
 
-  assert.equal(torrentMeta.name, 'planktos')
+  // If the torrent is a single file torrent its name should be the hash of the first file
+  assert.equal(torrentMeta.name, (!isSingleFileTorrent) ? 'planktos' : pathToHash[Object.keys(pathToHash)[0]])
   assert.notEqual(torrentMeta.announce.length, 0)
 
   assert.deepEqual(
@@ -61,7 +97,10 @@ function checkTorrent (rootDir, pathToContents, pathToHash) {
   )
   assert.deepEqual(
     torrentMeta.files.map((f) => f.path),
-    orderedRelFiles.map((relFile) => 'planktos/' + pathToHash[relFile])
+    orderedRelFiles.map((relFile) => {
+      if (!isSingleFileTorrent) return 'planktos/' + pathToHash[relFile]
+      else return pathToHash[relFile]
+    })
   )
   assert.deepEqual(
     torrentMeta.files.map((f) => f.length),
