@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-module.exports = setup
+module.exports.setup = setup
+module.exports.getHash = getHash
 
 /* eslint no-path-concat: "off" */
 

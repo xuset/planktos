@@ -1,70 +1,131 @@
 /* eslint-env mocha */
 
-const os = require('os')
-const fs = require('fs')
 const assert = require('assert')
+const fs = require('fs')
+const os = require('os')
 const parseTorrent = require('parse-torrent-file')
+const path = require('path')
 const setup = require('../bin/setup.js')
 
 describe('sanity', function () {
+  const pathToContents = {
+    'foo.txt': 'foo',
+    'dir/nested.txt': 'nested'
+  }
+
   it('happy path', function (done) {
-    /* fs layout
-     *   - root
-     *   | - foo.txt
-     *   | - dir
-     *   | | - nested.txt
-     */
+    let rootDir = tmpDir()
 
-    let root = tmpDir()
-    let fooPath = root + '/foo.txt'
-    let fooBuffer = Buffer.from('foo')
-    let fooHash = '0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33'
+    createTestDir(rootDir, pathToContents, function (pathToHash) {
+      setup.setup(rootDir, [rootDir], function (err) {
+        assert(err == null, err)
 
-    let nestedPath = root + '/dir/nested.txt'
-    let nestedBuffer = Buffer.from('nested')
-    let nestedHash = 'b4b3e0a278988bc15f2913af3f4153ccef74e465'
+        const makeAbs = (relPath) => path.normalize(rootDir + '/' + relPath)
+        const getContents = (relPath) => fs.readFileSync(makeAbs(relPath))
 
-    fs.writeFileSync(fooPath, fooBuffer)
-    fs.mkdirSync(root + '/dir')
-    fs.writeFileSync(nestedPath, nestedBuffer)
+        let manifest = JSON.parse(getContents('planktos/manifest.json').toString())
 
-    setup(root, [root], function (err) {
-      assert(err == null, err)
-      let manifest = JSON.parse(fs.readFileSync(root + '/planktos/manifest.json').toString())
-      let torrentMeta = parseTorrent(fs.readFileSync(root + '/planktos/root.torrent'))
-      assert.deepEqual(manifest, {
-        'foo.txt': fooHash,
-        'dir/nested.txt': nestedHash
+        Object.keys(manifest).forEach((relPath) => {
+          assert(manifest[relPath] === pathToHash[relPath])
+        })
+
+        checkTorrent(rootDir, pathToContents, pathToHash)
+
+        assert(getContents('/planktos/' + pathToHash['foo.txt']).equals(new Buffer(pathToContents['foo.txt'])))
+        assert(getContents('/planktos/' + pathToHash['dir/nested.txt']).equals(new Buffer(pathToContents['dir/nested.txt'])))
+        assert.notEqual(getContents('/planktos/install.js').length, 0)
+        assert.notEqual(getContents('/planktos/planktos.min.js').length, 0)
+        assert.notEqual(getContents('/planktos.sw.min.js').length, 0)
+
+        done()
       })
-      assert.equal(torrentMeta.infoHash, 'a8643993aafc786c6d263a3b2f6b30a731ddb6e1')
-      assert.equal(torrentMeta.name, 'planktos')
-      assert.notEqual(torrentMeta.announce.length, 0)
-      assert.deepEqual(torrentMeta.files, [
-        {
-          path: 'planktos/b4b3e0a278988bc15f2913af3f4153ccef74e465',
-          name: 'b4b3e0a278988bc15f2913af3f4153ccef74e465',
-          length: 6,
-          offset: 0
-        },
-        {
-          path: 'planktos/0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33',
-          name: '0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33',
-          length: 3,
-          offset: 6
-        }
-      ])
-      assert(fs.readFileSync(root + '/planktos/' + fooHash).equals(fooBuffer))
-      assert(fs.readFileSync(root + '/planktos/' + nestedHash).equals(nestedBuffer))
-      assert.notEqual(fs.readFileSync(root + '/planktos/install.js').length, 0)
-      assert.notEqual(fs.readFileSync(root + '/planktos/planktos.min.js').length, 0)
-      assert.notEqual(fs.readFileSync(root + '/planktos.sw.min.js').length, 0)
-      done()
     })
   })
 })
 
+/********************/
+/* HELPER FUNCTIONS */
+/********************/
+
+function checkTorrent (rootDir, pathToContents, pathToHash) {
+  const torrentMetaPath = rootDir + '/planktos/root.torrent'
+  const torrentMeta = parseTorrent(fs.readFileSync(torrentMetaPath))
+  const orderedRelFiles = Object.keys(pathToContents).sort()
+
+  assert.equal(torrentMeta.name, 'planktos')
+  assert.notEqual(torrentMeta.announce.length, 0)
+
+  assert.deepEqual(
+    torrentMeta.files.map((f) => f.name),
+    orderedRelFiles.map((relFile) => pathToHash[relFile])
+  )
+  assert.deepEqual(
+    torrentMeta.files.map((f) => f.path),
+    orderedRelFiles.map((relFile) => 'planktos/' + pathToHash[relFile])
+  )
+  assert.deepEqual(
+    torrentMeta.files.map((f) => f.length),
+    orderedRelFiles.map((relFile) => pathToContents[relFile].length)
+  )
+  assert.deepEqual(
+    torrentMeta.files.map((f) => f.offset),
+    orderedRelFiles.reduce((acc, relFile) => {
+      acc.push(pathToContents[relFile].length + acc.slice(-1)[0])
+      return acc
+    }, [0]).slice(0, -1)
+  )
+  // Check that the info hash is valid
+  assert(torrentMeta.infoHash.length === 40)
+}
+
+// Creates a test directory using a schema => {path: buffer}
+function createTestDir (rootDir, schema, cb) {
+  let promises = []
+
+  Object.keys(schema).forEach((relPath) => {
+    const absPath = path.normalize(rootDir + '/' + relPath)
+    const filename = absPath.substring(absPath.lastIndexOf(path.sep) + 1)
+    const fileContents = schema[relPath]
+
+    // Create the files on disk
+    absPath.split(path.sep).map((next) => {
+      if (next === '') return
+      let curPath = absPath.substring(0, absPath.indexOf(next) + next.length)
+
+      if (!fs.existsSync(curPath)) {
+        if (next === filename) fs.writeFileSync(curPath, fileContents)
+        else fs.mkdirSync(curPath)
+      }
+
+      return curPath
+    })
+
+    // Populate the dictionary
+    promises.push(new Promise((resolve, reject) => {
+      setup.getHash(absPath, (err, hashDigest) => {
+        if (err) reject(err)
+        // Return the relative path and the hash digest
+        resolve([
+          absPath.substring(absPath.indexOf(rootDir) + rootDir.length + 1),
+          hashDigest
+        ])
+      })
+    }))
+  })
+
+  Promise.all(promises).then((values) => {
+    let pathToHash = {}
+    values.forEach((val) => {
+      let [relPath, hash] = val
+      pathToHash[relPath] = hash
+    })
+
+    cb(pathToHash)
+  })
+}
+
 function tmpDir () {
-  let path = os.tmpDir() + '/' + Math.random().toString(16).substr(2)
-  fs.mkdirSync(path)
-  return path
+  let tmpDirPath = os.tmpDir() + '/' + Math.random().toString(16).substr(2)
+  fs.mkdirSync(tmpDirPath)
+  return tmpDirPath
 }
