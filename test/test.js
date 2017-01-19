@@ -11,7 +11,7 @@ describe('sanity check', function () {
   var iframe = null
 
   before(function () {
-    return loadIframe(base + 'index.html')
+    return loadIframe(base)
     .then(elem => {
       // register the service worker in the iframe and wait for it to activate
       iframe = elem
@@ -82,6 +82,10 @@ describe('sanity check', function () {
     .then(text => {
       assert.equal(text, 'bar\n')
     })
+  })
+
+  it('no iframe injected into html', function () {
+    assert.equal(iframe.contentDocument.getElementsByTagName('iframe').length, 0)
   })
 })
 

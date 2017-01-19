@@ -152,5 +152,7 @@ function onDownload () {
 
 function _normalizePath (filePath) {
   if (filePath.startsWith('/')) filePath = filePath.substr(1)
-  return path.normalize(filePath)
+  filePath = path.normalize(filePath)
+  if (filePath === '.') filePath = ''
+  return filePath
 }

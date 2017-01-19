@@ -18,30 +18,31 @@ assignDelegator()
 
 function onFetch (event) {
   var url = new URL(event.request.url)
-  var name = planktos._normalizePath(url.pathname.replace(scope, ''))
+  var fpath = planktos._normalizePath(url.pathname.replace(scope, ''))
   var search = url.search.substr(1).split('&')
 
   if (url.host !== global.location.host || event.request.method !== 'GET') return
-  if (planktos.preCached.indexOf('/' + name) === -1 && name.startsWith('planktos/')) return
+  if (planktos.preCached.indexOf('/' + fpath) === -1 && fpath.startsWith('planktos/')) return
 
   assignDelegator()
 
-  debug('FETCH', 'clientId=' + event.clientId, 'url=' + name)
+  debug('FETCH', 'clientId=' + event.clientId, 'url=' + fpath)
 
   // TODO let browser handle request if file is not in torrent
-  if (planktos.preCached.indexOf('/' + name) !== -1) {
+  if (planktos.preCached.indexOf('/' + fpath) !== -1) {
     return event.respondWith(global.caches.open('planktos')
-    .then(cache => cache.match(scope + '/' + name)))
+    .then(cache => cache.match(scope + '/' + fpath)))
   } else if (event.clientId == null && search.indexOf('noPlanktosInjection') === -1) {
+    var fname = fpath.substr(fpath.lastIndexOf('/') + 1)
+    var isHTML = fname.endsWith('.html') || fname.endsWith('.htm') || !fname.includes('.')
     var modUrl = new URL(url.toString())
     modUrl.search = (url.search === '' ? '?' : url.search + '&') + 'noPlanktosInjection'
-    var template = name.endsWith('html') || name.endsWith('htm')
-      ? injection.docWrite : injection.iframe
+    var template = isHTML ? injection.docWrite : injection.iframe
     var html = template.replace('{{url}}', modUrl.toString()).replace('{{scope}}', scope)
     return event.respondWith(new Response(new Blob([html], {type: 'text/html'})))
   } else {
     // TODO handle RANGE header
-    return event.respondWith(planktos.getFileBlob(name)
+    return event.respondWith(planktos.getFileBlob(fpath)
     .then(blob => new Response(blob))
     .catch(err => {
       if (err.message !== 'File not found') debug('FETCH-ERROR', err)
