@@ -1,8 +1,8 @@
 (function () {
   if (!('serviceWorker' in navigator)) return
 
-  var attributes = document.currentScript.attributes
-  var sw = '/planktos.sw.min.js'
+  let attributes = document.currentScript.attributes
+  let sw = '/planktos.sw.min.js'
   if (attributes['sw']) sw = attributes['sw'].value
   if (attributes['data-sw']) sw = attributes['data-sw'].value
 

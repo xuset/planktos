@@ -1,13 +1,13 @@
 self.global = self // eslint-disable-line
 
 require('debug').enable('planktos:*')
-var debug = require('debug')('planktos:sw')
-var planktos = require('.')
-var injection = require('./lib/injection')
+const debug = require('debug')('planktos:sw')
+const planktos = require('.')
+const injection = require('./lib/injection')
 
-var scope = global.location.pathname.substring(0, global.location.pathname.lastIndexOf('/'))
-var available = {}
-var delegator = null
+const scope = global.location.pathname.substring(0, global.location.pathname.lastIndexOf('/'))
+let available = {}
+let delegator = null
 
 global.addEventListener('fetch', onFetch)
 global.addEventListener('activate', onActivate)
@@ -17,9 +17,9 @@ global.addEventListener('message', onMessage)
 assignDelegator()
 
 function onFetch (event) {
-  var url = new URL(event.request.url)
-  var fpath = planktos._normalizePath(url.pathname.replace(scope, ''))
-  var search = url.search.substr(1).split('&')
+  let url = new URL(event.request.url)
+  let fpath = planktos._normalizePath(url.pathname.replace(scope, ''))
+  let search = url.search.substr(1).split('&')
 
   if (url.host !== global.location.host || event.request.method !== 'GET') return
   if (planktos.preCached.indexOf('/' + fpath) === -1 && fpath.startsWith('planktos/')) return
@@ -33,12 +33,12 @@ function onFetch (event) {
     return event.respondWith(global.caches.open('planktos')
     .then(cache => cache.match(scope + '/' + fpath)))
   } else if (event.clientId == null && search.indexOf('noPlanktosInjection') === -1) {
-    var fname = fpath.substr(fpath.lastIndexOf('/') + 1)
-    var isHTML = fname.endsWith('.html') || fname.endsWith('.htm') || !fname.includes('.')
-    var modUrl = new URL(url.toString())
+    let fname = fpath.substr(fpath.lastIndexOf('/') + 1)
+    const isHTML = fname.endsWith('.html') || fname.endsWith('.htm') || !fname.includes('.')
+    let modUrl = new URL(url.toString())
     modUrl.search = (url.search === '' ? '?' : url.search + '&') + 'noPlanktosInjection'
-    var template = isHTML ? injection.docWrite : injection.iframe
-    var html = template.replace('{{url}}', modUrl.toString()).replace('{{scope}}', scope)
+    let template = isHTML ? injection.docWrite : injection.iframe
+    let html = template.replace('{{url}}', modUrl.toString()).replace('{{scope}}', scope)
     return event.respondWith(new Response(new Blob([html], {type: 'text/html'})))
   } else {
     // TODO handle RANGE header
@@ -57,7 +57,7 @@ function onActivate () {
 
 function onInstall (event) {
   debug('INSTALL')
-  var update = planktos.update(scope)
+  let update = planktos.update(scope)
   update.then(() => planktos.getManifest())
   .then((manifest) => debug('MANIFEST', manifest))
   .then(() => planktos.getTorrentMeta())
@@ -79,8 +79,8 @@ function onMessage (event) {
 
 function assignDelegator () {
   global.clients.matchAll({type: 'window'}).then(clients => {
-    var potentials = clients.filter(c => c.id in available)
-    var redelegate = !delegator || !potentials.find(c => c.id === delegator.id)
+    let potentials = clients.filter(c => c.id in available)
+    let redelegate = !delegator || !potentials.find(c => c.id === delegator.id)
     if (potentials.length === 0) {
       clients.forEach(c => c.postMessage({
         type: 'request_availability',

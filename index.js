@@ -1,9 +1,9 @@
-var global = typeof window !== 'undefined' ? window : self // eslint-disable-line
+const global = typeof window !== 'undefined' ? window : self // eslint-disable-line
 
 // Temp bug fix: https://github.com/srijs/rusha/issues/39
 if (global.WorkerGlobalScope) delete global.FileReaderSync
 
-var preCached = [
+const preCached = [
   '/planktos/root.torrent',
   '/planktos/manifest.json',
   '/planktos/planktos.min.js',
@@ -21,18 +21,18 @@ module.exports.getTorrentMetaBuffer = getTorrentMetaBuffer
 module.exports._normalizePath = _normalizePath
 module.exports.downloader = require('./lib/downloader')
 
-var ChunkStream = require('chunk-store-stream')
-var IdbChunkStore = require('indexeddb-chunk-store')
-var IdbKvStore = require('idb-kv-store')
-var toBlob = require('stream-to-blob')
-var parseTorrent = require('parse-torrent-file')
-var path = require('path')
+const ChunkStream = require('chunk-store-stream')
+const IdbChunkStore = require('indexeddb-chunk-store')
+const IdbKvStore = require('idb-kv-store')
+const toBlob = require('stream-to-blob')
+const parseTorrent = require('parse-torrent-file')
+const path = require('path')
 
-var waitingFetches = {}
-var persistent = new IdbKvStore('planktos')
-var downloaded = new IdbKvStore('planktos-downloaded')
-var chunkStore = null
-var downloadChannel = null
+let waitingFetches = {}
+let persistent = new IdbKvStore('planktos')
+let downloaded = new IdbKvStore('planktos-downloaded')
+let chunkStore = null
+let downloadChannel = null
 
 function getDownloaded () {
   return downloaded.json()
@@ -99,23 +99,23 @@ function update (url) {
   if (!url) url = ''
   if (url.endsWith('/')) url = url.substr(0, url.length - 1)
 
-  var cachePromise = global.caches.open('planktos')
+  let cachePromise = global.caches.open('planktos')
   .then((cache) => cache.addAll(preCached.map(f => url + f)))
   .then(() => global.caches.open('planktos'))
 
-  var manifestPromise = cachePromise
+  let manifestPromise = cachePromise
   .then(cache => cache.match(url + '/planktos/manifest.json'))
   .then(response => response.json())
   .then(json => {
     return persistent.set('manifest', json)
   })
 
-  var torrentPromise = cachePromise
+  let torrentPromise = cachePromise
   .then(cache => cache.match(url + '/planktos/root.torrent'))
   .then(response => response.arrayBuffer())
   .then(arrayBuffer => {
-    var buffer = Buffer.from(arrayBuffer)
-    var parsed = parseTorrent(buffer)
+    let buffer = Buffer.from(arrayBuffer)
+    let parsed = parseTorrent(buffer)
     return Promise.all([
       persistent.set('torrentMetaBuffer', buffer),
       persistent.set('torrentMeta', parsed)
@@ -133,15 +133,15 @@ function onDownload () {
     persistent.get('manifest'),
     downloaded.json()
   ]).then(result => {
-    var [manifest, downloaded] = result
-    for (var hash in downloaded) {
+    let [manifest, downloaded] = result
+    for (let hash in downloaded) {
       if (hash in waitingFetches) {
-        var filePath = Object.keys(manifest).find(fname => manifest[fname] === hash)
-        var waiters = waitingFetches[hash]
+        let filePath = Object.keys(manifest).find(fname => manifest[fname] === hash)
+        let waiters = waitingFetches[hash]
         delete waitingFetches[hash]
         getFileBlob(filePath)
         .then(b => {
-          for (var p of waiters) {
+          for (let p of waiters) {
             p(b)
           }
         })

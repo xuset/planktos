@@ -1,14 +1,14 @@
 /* eslint-env mocha */
 /* global planktos */
 
-var assert = require('assert')
-var parseTorrent = require('parse-torrent-file')
+const assert = require('assert')
+const parseTorrent = require('parse-torrent-file')
 
 describe('sanity check', function () {
   this.timeout(20000)
 
-  var base = '/base/test/www/'
-  var iframe = null
+  const base = '/base/test/www/'
+  let iframe = null
 
   before(function () {
     return loadIframe(base)
@@ -91,7 +91,7 @@ describe('sanity check', function () {
 
 function loadIframe (url) {
   return new Promise(function (resolve) {
-    var iframe = document.createElement('iframe')
+    let iframe = document.createElement('iframe')
     iframe.onload = onload
     iframe.src = url
     document.body.appendChild(iframe)
@@ -105,7 +105,7 @@ function loadIframe (url) {
 
 function blobToText (blob) {
   return new Promise(function (resolve, reject) {
-    var fr = new window.FileReader()
+    let fr = new window.FileReader()
     fr.onload = onload
     fr.onerror = onerror
     fr.readAsText(blob)
