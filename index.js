@@ -33,7 +33,8 @@ let persistent = new IdbKvStore('planktos')
 let downloaded = new IdbKvStore('planktos-downloaded')
 let priority = new IdbKvStore('planktos-priority')
 let chunkStore = null
-let downloadChannel = null
+
+downloaded.on('set', onDownload)
 
 function getDownloaded () {
   return downloaded.json()
@@ -52,13 +53,6 @@ function getTorrentMetaBuffer () { // TODO Fix parsing bug so this can be remove
 }
 
 function getFileBlob (filePath) {
-  if (typeof BroadcastChannel === 'undefined') throw new Error('No BroadcastChannel support')
-
-  if (!downloadChannel) {
-    downloadChannel = new BroadcastChannel('planktos-downloaded')
-    downloadChannel.addEventListener('message', onDownload)
-  }
-
   filePath = _normalizePath(filePath)
   return Promise.all([
     persistent.get('manifest'),
@@ -135,24 +129,16 @@ function update (url) {
   ])
 }
 
-function onDownload () {
-  return Promise.all([
-    persistent.get('manifest'),
-    downloaded.json()
-  ]).then(result => {
-    let [manifest, downloaded] = result
-    for (let hash in downloaded) {
-      if (hash in waitingFetches) {
-        let filePath = Object.keys(manifest).find(fname => manifest[fname] === hash)
-        let waiters = waitingFetches[hash]
-        delete waitingFetches[hash]
-        getFileBlob(filePath)
-        .then(b => {
-          for (let p of waiters) {
-            p(b)
-          }
-        })
-      }
+function onDownload (change) {
+  return persistent.get('manifest')
+  .then(manifest => {
+    let hash = change.key
+    if (hash in waitingFetches) {
+      let filePath = Object.keys(manifest).find(fname => manifest[fname] === hash)
+      let waiters = waitingFetches[hash]
+      delete waitingFetches[hash]
+      getFileBlob(filePath)
+      .then(blob => waiters.forEach(w => w(blob)))
     }
   })
 }

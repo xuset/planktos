@@ -8,7 +8,7 @@
     "chunk-store-stream": "^2.0.2",
     "create-torrent": "^3.25.1",
     "debug": "^2.6.0",
-    "idb-kv-store": "^4.0.1",
+    "idb-kv-store": "^4.0.2",
     "indexeddb-chunk-store": "^2.0.0",
     "minimist": "^1.2.0",
     "parse-torrent-file": "^4.0.0",
