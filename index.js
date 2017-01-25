@@ -31,6 +31,7 @@ const path = require('path')
 let waitingFetches = {}
 let persistent = new IdbKvStore('planktos')
 let downloaded = new IdbKvStore('planktos-downloaded')
+let priority = new IdbKvStore('planktos-priority')
 let chunkStore = null
 let downloadChannel = null
 
@@ -59,7 +60,11 @@ function getFileBlob (filePath) {
   }
 
   filePath = _normalizePath(filePath)
-  return persistent.get(['manifest', 'torrentMeta']).then(result => {
+  return Promise.all([
+    persistent.get('manifest'),
+    persistent.get('torrentMeta')
+  ])
+  .then(result => {
     let [manifest, torrentMeta] = result
 
     // If the `filePath` cannot be found in the manifest, try to search for the index file
@@ -85,6 +90,7 @@ function getFileBlob (filePath) {
           })
         })
       } else {
+        priority.add(hash)
         // Defer until the file finishes downloading
         return new Promise(function (resolve) {
           if (!waitingFetches[hash]) waitingFetches[hash] = []
@@ -124,7 +130,8 @@ function update (url) {
 
   return Promise.all([
     manifestPromise,
-    torrentPromise
+    torrentPromise,
+    priority.clear()
   ])
 }
 
