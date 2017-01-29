@@ -23,9 +23,9 @@
   </a>
 </p>
 
-Planktos enables websites to serve their static content over BitTorrent by turning users into seeders. This allows website owners to significantly reduce hosting costs for static content and scale in realtime without provisioning more web servers. Planktos works in vanilla Chrome and Firefox (no browser extensions needed), using [WebTorrent](https://webtorrent.io) for peer to peer file transfers. Planktos serves as a drop in tool to automatically allow files to be downloaded over BitTorrent when possible, defaulting to a web server when not.
+Planktos enables websites to serve their static content over BitTorrent by turning users into seeders. This allows website owners to significantly reduce hosting costs for static content and scale in realtime without provisioning more web servers. Planktos works in vanilla Chrome and Firefox (no browser extensions needed), using [WebTorrent](https://webtorrent.io) for peer to peer file transfers and service workers to reroute network requests over BitTorrent.
 
-Installing Planktos into a website is as simple as including the Planktos install script and using the Planktos command line interface to bundle your static files into a torrent.
+Installing Planktos into a website is as simple as including the Planktos install.js script and using the Planktos command line interface to bundle your static files into a torrent.
 
 A special thanks to the [WebTorrent](https://webtorrent.io) project, which is used extensively in Planktos.
 
@@ -35,21 +35,17 @@ The Planktos command line interface (CLI) copies the necessary library files and
 
 `npm install -g planktos`
 
-Now change your current working directory to the directory you want to be served by Planktos. To copy the library files run:
-
-`planktos --lib-only`
-
-The Planktos service worker, which intercepts network calls, needs to be registered by including the install script or registering the service worker manually:
-
-`<script src="/planktos/install.js"></script>`
-
-Finally, the website files need to be packaged into a torrent, so they can be served over BitTorrent. To selectively package files into a torrent run:
+Change your current working directory to the root of the website, and to package the website into a torrent run:
 
 `planktos [directories and/or files...]`
 
-If no files or directories are passed in, Planktos packages everything in the current working directory.
+If no directories or files are passed in then the entire current working directory is packaged into the torrent. The tool will also copy the service worker, named `planktos.sw.min.js`, into the directory which reroutes network requests over BitTorrent. The service worker needs to be registered using the below install script or registered manually:
 
-That was it. To test that everything is working as expected, use your browser's devtools to inspect the network requests your website makes. To update files simply run the Planktos command again.
+`<script src="/planktos/install.js"></script>`
+
+After updating the website's files, users viewing the website over Planktos won't receive the updated files until after the torrent is repackaged which can be done by running the Planktos CLI again.
+
+That was it. To test that everything is working as expected, use your browser's devtools to inspect the network requests your website makes.
 
 Requirements for Planktos Websites:
  * The site must be served over https (or http on localhost), because service workers have restrictions on which types of sites can register them
