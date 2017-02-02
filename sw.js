@@ -42,7 +42,8 @@ function onFetch (event) {
     return event.respondWith(new Response(new Blob([html], {type: 'text/html'})))
   } else {
     // TODO handle RANGE header
-    return event.respondWith(planktos.getFileBlob(fpath)
+    return event.respondWith(planktos.getFile(fpath)
+    .then(f => f.getBlob())
     .then(blob => new Response(blob))
     .catch(err => {
       if (err.message !== 'File not found') debug('FETCH-ERROR', err)

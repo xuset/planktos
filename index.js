@@ -10,8 +10,6 @@ const preCached = [
   '/planktos/install.js'
 ]
 
-module.exports.getNodeStream = getNodeStream
-module.exports.getFileBlob = getFileBlob
 module.exports.update = update
 module.exports.preCached = preCached // TODO better way to handle preCached
 module.exports.getManifest = getManifest
@@ -19,15 +17,14 @@ module.exports.getTorrentMeta = getTorrentMeta
 module.exports.getTorrentMetaBuffer = getTorrentMetaBuffer
 module.exports._normalizePath = _normalizePath
 module.exports.downloader = require('./lib/downloader')
+module.exports.getFile = getFile
 
 const IdbKvStore = require('idb-kv-store')
-const toBlob = require('stream-to-blob')
 const parseTorrent = require('parse-torrent-file')
 const path = require('path')
-const StreamFactory = require('./lib/streamfactory')
+const _getFile = require('./lib/file')
 
 let persistent = new IdbKvStore('planktos')
-let streamFactory = new StreamFactory(this)
 
 function getManifest () {
   return persistent.get('manifest')
@@ -41,20 +38,8 @@ function getTorrentMetaBuffer () { // TODO Fix parsing bug so this can be remove
   return persistent.get('torrentMetaBuffer')
 }
 
-function getFileBlob (filePath) {
-  return getNodeStream(filePath)
-  .then(stream => {
-    return new Promise(function (resolve, reject) {
-      toBlob(stream, function (err, blob) {
-        if (err) return reject(err)
-        resolve(blob)
-      })
-    })
-  })
-}
-
-function getNodeStream (filePath) {
-  return streamFactory.getNodeStream(filePath)
+function getFile (fpath) {
+  return _getFile(this, fpath)
 }
 
 function update (url) {
