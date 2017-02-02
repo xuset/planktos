@@ -95,6 +95,11 @@ describe('sanity check', function () {
     })
   })
 
+  it('getFileBlob() - file does not exist', function () {
+    return planktos.getFileBlob('/doesNotExist.html')
+    .catch(err => assert.equal(err.message, 'File not found'))
+  })
+
   it('no iframe injected into html', function () {
     assert.equal(iframe.contentDocument.getElementsByTagName('iframe').length, 0)
   })

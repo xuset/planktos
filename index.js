@@ -20,17 +20,14 @@ module.exports.getTorrentMetaBuffer = getTorrentMetaBuffer
 module.exports._normalizePath = _normalizePath
 module.exports.downloader = require('./lib/downloader')
 
-const ChunkStream = require('chunk-store-read-stream')
-const IdbChunkStore = require('indexeddb-chunk-store')
 const IdbKvStore = require('idb-kv-store')
 const toBlob = require('stream-to-blob')
 const parseTorrent = require('parse-torrent-file')
 const path = require('path')
+const StreamFactory = require('./lib/streamfactory')
 
 let persistent = new IdbKvStore('planktos')
-let priority = new IdbKvStore('planktos-priority')
-let chunkStore = null
-let missingChunks = {}
+let streamFactory = new StreamFactory(this)
 
 function getManifest () {
   return persistent.get('manifest')
@@ -44,41 +41,6 @@ function getTorrentMetaBuffer () { // TODO Fix parsing bug so this can be remove
   return persistent.get('torrentMetaBuffer')
 }
 
-function getNodeStream (filePath) {
-  filePath = _normalizePath(filePath)
-  return Promise.all([
-    persistent.get('manifest'),
-    persistent.get('torrentMeta')
-  ])
-  .then(result => {
-    let [manifest, torrentMeta] = result
-
-    // If the `filePath` cannot be found in the manifest, try to search for the index file
-    let indexFilePathCandidates = ['index.html', 'index.htm'].map((filename) => path.join(filePath, filename))
-    let hash = manifest[filePath] || manifest[indexFilePathCandidates.find((fpath) => Object.keys(manifest).includes(fpath))]
-    let fileInfo = torrentMeta.files.find(f => f.name === hash)
-
-    if (!fileInfo) {
-      return Promise.reject(new Error('File not found'))
-    }
-
-    if (!chunkStore) {
-      chunkStore = new IdbChunkStore(torrentMeta.pieceLength, {name: torrentMeta.infoHash})
-      chunkStore._store.on('set', onChunkPut)
-    }
-
-    priority.add(hash) // TODO only add if necessary
-
-    if (fileInfo.length === 0) throw new Error('Cannot read empty file')
-
-    return new ChunkStream(chunkStore, {
-      start: fileInfo.offset,
-      end: fileInfo.offset + fileInfo.length - 1,
-      onmiss: onChunkMiss
-    })
-  })
-}
-
 function getFileBlob (filePath) {
   return getNodeStream(filePath)
   .then(stream => {
@@ -89,6 +51,10 @@ function getFileBlob (filePath) {
       })
     })
   })
+}
+
+function getNodeStream (filePath) {
+  return streamFactory.getNodeStream(filePath)
 }
 
 function update (url) {
@@ -120,8 +86,7 @@ function update (url) {
 
   return Promise.all([
     manifestPromise,
-    torrentPromise,
-    priority.clear()
+    torrentPromise
   ])
 }
 
@@ -130,21 +95,4 @@ function _normalizePath (filePath) {
   filePath = path.normalize(filePath)
   if (filePath === '.') filePath = ''
   return filePath
-}
-
-function onChunkMiss (err, index, retry) {
-  if (err.name === 'MissingChunkError') {
-    missingChunks[index] = missingChunks[index] || []
-    missingChunks[index].push(retry)
-  } else {
-    retry(err)
-  }
-}
-
-function onChunkPut (change) {
-  if (missingChunks[change.key]) {
-    let retries = missingChunks[change.key]
-    delete missingChunks[change.key]
-    retries.forEach(retry => retry())
-  }
 }
