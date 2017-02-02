@@ -10,7 +10,7 @@ const preCached = [
   '/planktos/install.js'
 ]
 
-// TODO add getFileStream
+module.exports.getNodeStream = getNodeStream
 module.exports.getFileBlob = getFileBlob
 module.exports.update = update
 module.exports.preCached = preCached // TODO better way to handle preCached
@@ -20,7 +20,7 @@ module.exports.getTorrentMetaBuffer = getTorrentMetaBuffer
 module.exports._normalizePath = _normalizePath
 module.exports.downloader = require('./lib/downloader')
 
-const ChunkStream = require('./lib/stream')
+const ChunkStream = require('chunk-store-read-stream')
 const IdbChunkStore = require('indexeddb-chunk-store')
 const IdbKvStore = require('idb-kv-store')
 const toBlob = require('stream-to-blob')
@@ -30,6 +30,7 @@ const path = require('path')
 let persistent = new IdbKvStore('planktos')
 let priority = new IdbKvStore('planktos-priority')
 let chunkStore = null
+let missinChunks = {}
 
 function getManifest () {
   return persistent.get('manifest')
@@ -43,7 +44,7 @@ function getTorrentMetaBuffer () { // TODO Fix parsing bug so this can be remove
   return persistent.get('torrentMetaBuffer')
 }
 
-function getFileBlob (filePath) {
+function getNodeStream (filePath) {
   filePath = _normalizePath(filePath)
   return Promise.all([
     persistent.get('manifest'),
@@ -61,13 +62,26 @@ function getFileBlob (filePath) {
       return Promise.reject(new Error('File not found'))
     }
 
-    chunkStore = chunkStore || new IdbChunkStore(torrentMeta.pieceLength, {name: torrentMeta.infoHash})
+    if (!chunkStore) {
+      chunkStore = new IdbChunkStore(torrentMeta.pieceLength, {name: torrentMeta.infoHash})
+      chunkStore._store.on('set', onChunkPut)
+    }
 
     priority.add(hash) // TODO only add if necessary
-    let stream = new ChunkStream(chunkStore, {
+
+    if (fileInfo.length === 0) throw new Error('Cannot read empty file')
+
+    return new ChunkStream(chunkStore, {
       start: fileInfo.offset,
-      end: fileInfo.offset + fileInfo.length
+      end: fileInfo.offset + fileInfo.length - 1,
+      onmiss: onChunkMiss
     })
+  })
+}
+
+function getFileBlob (filePath) {
+  return getNodeStream(filePath)
+  .then(stream => {
     return new Promise(function (resolve, reject) {
       toBlob(stream, function (err, blob) {
         if (err) return reject(err)
@@ -116,4 +130,21 @@ function _normalizePath (filePath) {
   filePath = path.normalize(filePath)
   if (filePath === '.') filePath = ''
   return filePath
+}
+
+function onChunkMiss (err, index, retry) {
+  if (err.name === 'MissingChunkError') {
+    missinChunks[index] = missinChunks[index] || []
+    missinChunks[index].push(retry)
+  } else {
+    retry(err)
+  }
+}
+
+function onChunkPut (change) {
+  if (missinChunks[change.key]) {
+    let retries = missinChunks[change.key]
+    delete missinChunks[change.key]
+    retries.forEach(retry => retry())
+  }
 }

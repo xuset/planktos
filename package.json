@@ -5,6 +5,7 @@
   "main": "index.js",
   "bin": "./bin/setup.js",
   "dependencies": {
+    "chunk-store-read-stream": "^1.0.0",
     "create-torrent": "^3.26.1",
     "debug": "^2.6.0",
     "idb-kv-store": "^4.1.0",

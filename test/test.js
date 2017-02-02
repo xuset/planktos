@@ -47,6 +47,22 @@ describe('sanity check', function () {
     .then(buffer => assert.notEqual(buffer.length, 0))
   })
 
+  it('getNodeStream()', function () {
+    return planktos.getNodeStream('foobar.txt')
+    .then(stream => {
+      return new Promise(resolve => {
+        var buffer = Buffer.alloc(0)
+        stream.on('data', chunk => {
+          buffer = Buffer.concat([buffer, chunk])
+        })
+        stream.on('end', (c) => {
+          assert(buffer.equals(Buffer.from('foobar\n')))
+          resolve()
+        })
+      })
+    })
+  })
+
   it('getFileBlob()', function () {
     return planktos.getFileBlob('foobar.txt')
     .then(blob => blobToText(blob))
