@@ -74,7 +74,7 @@
                     <div class="col-md-8 col-md-offset-2">
                         <img src="planktos-logo.png" alt="" style="width: 20%">
                         <h1 class="brand-heading">Planktos</h1>
-                        <p class="intro-text">Serving websites over bittorrent</p>
+                        <p class="intro-text">Enabling websites to serve their static content over BitTorrent</p>
                         <a href="#about" class="btn btn-circle page-scroll">
                             <i class="fa fa-angle-double-down animated"></i>
                         </a>
@@ -86,7 +86,8 @@
 
     <!-- About Section -->
     <section id="about" class="container content-section">
-        <p class="text-center">Planktos enables websites to serve their static content over bittorrent from the users of the website</p>
+        <h2 class="text-center">What is Planktos?</h2>
+        <p class="text-center">Planktos enables websites to serve their static content over BitTorrent by turning users into seeders. This allows website owners to significantly reduce hosting costs for static content, scale in real-time without provisioning more web servers, and prevent user impact during an outage.<p>
 
         <div class="row" style="padding-bottom: 45px">
             <div class="col-md-4 col-md-offset-2">
@@ -96,29 +97,7 @@
                 </h4>
             </div>
             <div class="col-md-4 text-justify">
-              Users download the static content from other users with <a target="_blank" href="https://webtorrent.io/">webtorrent</a>. This allows site owners to reduce bandwidth usage and offset declining ad revenue.
-            </div>
-        </div>
-        <div class="row" style="padding-bottom: 45px">
-            <div class="col-md-4 col-md-offset-2">
-                <h4>
-                    <i class="fa fa-bolt" aria-hidden="true"></i>
-                    Fast &amp; Scalable
-                </h4>
-            </div>
-            <div class="col-md-4 text-justify">
-              With more users, downloads get faster.
-            </div>
-        </div>
-        <div class="row" style="padding-bottom: 45px">
-            <div class="col-md-4 col-md-offset-2">
-                <h4>
-                    <i class="fa fa-lock" aria-hidden="true"></i>
-                    Secure
-                </h4>
-            </div>
-            <div class="col-md-4 text-justify">
-              All peer downloaded files are verified with sha1 as required by the bittorrent spec.
+                Planktos uses <a target="_blank" href="https://webtorrent.io">WebTorrent</a> to convert users of your website into seeders, enabling them to serve static content to other users. This reduces server bandwidth and makes your website more resilient.
             </div>
         </div>
         <div class="row" style="padding-bottom: 45px">
@@ -129,18 +108,40 @@
                 </h4>
             </div>
             <div class="col-md-4 text-justify">
-              The Planktos service worker intercepts HTTP GET requests and retreives the files over bittorrent. No code changes required other than the one liner to register the service worker.
+                Using Planktos is as simple as including the Planktos install script and using the Planktos command line interface to bundle your website's static files into a torrent.
             </div>
         </div>
         <div class="row" style="padding-bottom: 45px">
             <div class="col-md-4 col-md-offset-2">
                 <h4>
-                    <i class="fa fa-files-o" aria-hidden="true"></i>
-                    Supports all files
+                    <i class="fa fa-life-ring" aria-hidden="true"></i>
+                    Avoid downtime
+                </h4>
+            </div>
+            <div class="col-lg-4 text-justify">
+                Planktos can serve your website even if your web servers go down. Any users that visited your website prior to an outage will still be able to access it.
+            </div>
+        </div>
+        <div class="row" style="padding-bottom: 45px">
+            <div class="col-md-4 col-md-offset-2">
+                <h4>
+                    <i class="fa fa-bolt" aria-hidden="true"></i>
+                    Customizable
                 </h4>
             </div>
             <div class="col-md-4 text-justify">
-              Whether it's html, css, javascript, image, or video files it all works with Planktos.
+                Planktos has sensible defaults and a simple interface for customization, allowing you to tweak it to your needs.
+            </div>
+        </div>
+        <div class="row" style="padding-bottom: 45px">
+            <div class="col-md-4 col-md-offset-2">
+                <h4>
+                    <i class="fa fa-bolt" aria-hidden="true"></i>
+                    Fast &amp; Scalable
+                </h4>
+            </div>
+            <div class="col-md-4 text-justify">
+              With more users downloads get faster.
             </div>
         </div>
         <div class="row" style="padding-bottom: 45px">
@@ -152,7 +153,29 @@
                 </h4>
             </div>
             <div class="col-md-4 text-justify">
-              Planktos supports Chrome and Firefox with no extra software or plugins needed. Other browsers are working to implement the APIs Planktos requires like webrtc and service workers.
+                Planktos supports Chrome and Firefox with no plugins needed. When Planktos encounters an unsupported browser it gracefully falls back to default settings.
+            </div>
+        </div>
+        <div class="row" style="padding-bottom: 45px">
+            <div class="col-md-4 col-md-offset-2">
+                <h4>
+                    <i class="fa fa-lock" aria-hidden="true"></i>
+                    Secure
+                </h4>
+            </div>
+            <div class="col-md-4 text-justify">
+              All files downloaded from peers are verified with SHA-1 as required by the BitTorrent specification.
+            </div>
+        </div>
+        <div class="row" style="padding-bottom: 45px">
+            <div class="col-md-4 col-md-offset-2">
+                <h4>
+                    <i class="fa fa-files-o" aria-hidden="true"></i>
+                    Supports all file types
+                </h4>
+            </div>
+            <div class="col-md-4 text-justify">
+              Whether it's HTML, CSS, Javascript, images, videos, or something else it all works with Planktos.
             </div>
         </div>
         <div class="row" style="padding-bottom: 45px">
@@ -163,18 +186,7 @@
                 </h4>
             </div>
             <div class="col-md-4 text-justify">
-                Once files are downloaded, they are persisted to disk and used for any subsequent requests. There is no need for browsers to ask the web server if files have changed because the torrent stores the hashes of those files.
-            </div>
-        </div>
-        <div class="row" style="padding-bottom: 45px">
-            <div class="col-md-4 col-md-offset-2">
-                <h4>
-                    <i class="fa fa-life-ring" aria-hidden="true"></i>
-                    Avoid downtime
-                </h4>
-            </div>
-            <div class="col-lg-4 text-justify">
-                Planktos is still able to download files from bittorrent even if the website's servers go down, and users can still view already downloaded content even if they are offline.
+                Once files are downloaded, they are persisted to disk and used for any subsequent requests. Since Planktos stores file hashes, there is no need for the browser to ask your web server if any files have changed.
             </div>
         </div>
     </section>
@@ -184,10 +196,15 @@
         <div class="download-section">
             <div class="container">
                 <div class="col-lg-8 col-lg-offset-2">
-                    <h2>Install Planktos</h2>
-                    <p class="text-justify">Installing planktos is as simple as adding a one liner to register the service worker and generating the torrent for the static files.</p>
-                    <p><a target="_blank" href="https://github.com/xuset/planktos#setup" class="btn btn-default btn-lg"><i class="fa fa-arrow-circle-o-down" aria-hidden="true"></i> Install</a></p>
-                    <p class="text-justify">Planktos is early in developement so production use is <b>not</b> recommended yet.</p>
+                    <h2>Learn More About Planktos</h2>
+                        <a target="_blank" href="https://github.com/xuset/planktos#----------planktos" class="btn btn-default btn-lg" style="margin: 20px">
+                            <i class="fa fa-arrow-circle-o-down" aria-hidden="true"></i> Get Started
+                        </a>
+                        <a target="_blank" href="https://github.com/xuset/planktos#how-it-works" class="btn btn-default btn-lg" style="margin: 20px">
+                            <i class="fa fa-arrow-circle-o-down" aria-hidden="true"></i> How It Works
+                        </a>
+                    </p>
+                    <p class="text-justify"><i>Disclaimer:</i> Planktos is still in alpha, so production use is <b>not</b> recommended yet.</p>
                 </div>
             </div>
         </div>
@@ -198,8 +215,8 @@
         <div class="row">
             <div class="col-lg-8 col-lg-offset-2">
                 <h2>Open Source</h2>
-                <p class="text-justify">Planktos is an open source project licensed under MIT. Stop by the github page if you want to hack on Planktos or create an issue</p>
-                <p class="text-justify">This project would not have been possible without the awesome people who make the web a better place. And special thanks to feross for <a target="_blank" href="https://webtorrent.io/">webtorrent</a> which this project makes extensive use of.</p>
+                <p class="text-justify">Planktos is open source and free to use. Stop by the GitHub page if you want to hack on Planktos, report a bug, or submit a feature request.</p>
+                <p class="text-justify">A special thanks to Feross and other contributors of <a target="_blank" href="https://webtorrent.io/">WebTorrent</a>, which this project makes extensive use of.</p>
                 <ul class="list-inline banner-social-buttons">
                     <li>
                         <a target="_blank" href="https://github.com/xuset/planktos" class="btn btn-default btn-lg"><i class="fa fa-github fa-fw"></i> <span class="network-name">Github</span></a>
