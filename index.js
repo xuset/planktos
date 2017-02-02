@@ -30,7 +30,7 @@ const path = require('path')
 let persistent = new IdbKvStore('planktos')
 let priority = new IdbKvStore('planktos-priority')
 let chunkStore = null
-let missinChunks = {}
+let missingChunks = {}
 
 function getManifest () {
   return persistent.get('manifest')
@@ -134,17 +134,17 @@ function _normalizePath (filePath) {
 
 function onChunkMiss (err, index, retry) {
   if (err.name === 'MissingChunkError') {
-    missinChunks[index] = missinChunks[index] || []
-    missinChunks[index].push(retry)
+    missingChunks[index] = missingChunks[index] || []
+    missingChunks[index].push(retry)
   } else {
     retry(err)
   }
 }
 
 function onChunkPut (change) {
-  if (missinChunks[change.key]) {
-    let retries = missinChunks[change.key]
-    delete missinChunks[change.key]
+  if (missingChunks[change.key]) {
+    let retries = missingChunks[change.key]
+    delete missingChunks[change.key]
     retries.forEach(retry => retry())
   }
 }
