@@ -3,28 +3,28 @@ const global = typeof window !== 'undefined' ? window : self // eslint-disable-l
 // Temp bug fix: https://github.com/srijs/rusha/issues/39
 if (global.WorkerGlobalScope) delete global.FileReaderSync
 
+module.exports.update = update
+module.exports.getManifest = getManifest
+module.exports.getTorrentMeta = getTorrentMeta
+module.exports.getTorrentMetaBuffer = getTorrentMetaBuffer
+module.exports.downloader = require('./lib/downloader')
+module.exports.getFile = getFile
+module.exports.fetch = fetch
+
+const IdbKvStore = require('idb-kv-store')
+const parseTorrent = require('parse-torrent-file')
+const _getFile = require('./lib/file')
+const injection = require('./lib/injection')
+const path = require('path')
+
+let persistent = new IdbKvStore('planktos')
+
 const preCached = [
   '/planktos/root.torrent',
   '/planktos/manifest.json',
   '/planktos/planktos.min.js',
   '/planktos/install.js'
 ]
-
-module.exports.update = update
-module.exports.preCached = preCached // TODO better way to handle preCached
-module.exports.getManifest = getManifest
-module.exports.getTorrentMeta = getTorrentMeta
-module.exports.getTorrentMetaBuffer = getTorrentMetaBuffer
-module.exports._normalizePath = _normalizePath
-module.exports.downloader = require('./lib/downloader')
-module.exports.getFile = getFile
-
-const IdbKvStore = require('idb-kv-store')
-const parseTorrent = require('parse-torrent-file')
-const path = require('path')
-const _getFile = require('./lib/file')
-
-let persistent = new IdbKvStore('planktos')
 
 function getManifest () {
   return persistent.get('manifest')
@@ -39,7 +39,61 @@ function getTorrentMetaBuffer () { // TODO Fix parsing bug so this can be remove
 }
 
 function getFile (fpath) {
-  return _getFile(this, fpath)
+  return _getFile(module.exports, fpath)
+}
+
+function fetch (req, opts) {
+  opts = opts || {}
+  let inject = false
+  let url = null
+
+  // Convert a FetchEvent to Request
+  if (global.FetchEvent && req instanceof global.FetchEvent) {
+    inject = req.clientId == null
+    req = req.request // req is now an instance of Request
+  }
+
+  // Convert a Request to an URL
+  if (req instanceof global.Request) {
+    url = new URL(req.url)
+    inject = inject && url.search.substr(1)
+             .split('&').find(s => s === 'noPlanktosInjection') == null
+    if (req.method !== 'GET') throw new Error('Only HTTP GET requests supported')
+  } else if (req instanceof URL) {
+    url = req
+  } else if (typeof req === 'string') {
+    url = new URL(req)
+  }
+
+  if (req == null) throw new Error('Must provide a FetchEvent, Request, URL, or a string')
+  if (url.origin !== global.location.origin) throw new Error('Cannot Fetch. Origin differs')
+
+  // Generate response blob. Depends on if the downloader should be injected or not
+  let blobPromise = null
+  if ('inject' in opts ? opts.inject : inject) {
+    let fname = url.pathname.substr(url.pathname.lastIndexOf('/') + 1)
+    const isHTML = fname.endsWith('.html') || fname.endsWith('.htm') || !fname.includes('.')
+    let modUrl = new URL(url.toString())
+    modUrl.search = (url.search === '' ? '?' : url.search + '&') + 'noPlanktosInjection'
+    let html = (isHTML ? injection.docWrite : injection.iframe)
+               .replace('{{url}}', modUrl.toString())
+               .replace('{{scope}}', opts.scope ? opts.scope : '')
+    blobPromise = Promise.resolve(new Blob([html], {type: 'text/html'}))
+  } else {
+    // fpath is relative to the service worker scope if opts.scope was given
+    let fpath = opts.scope ? url.pathname.replace(opts.scope, '') : url.pathname
+
+    blobPromise = Promise.all([
+      global.caches.open('planktos')
+        .then(c => c.match(path.normalize(url.pathname)))
+        .then(r => r ? r.blob() : undefined),
+      getFile(fpath)
+        .then(f => f ? f.getBlob() : undefined)
+    ]).then(blobs => blobs[0] || blobs[1])
+  }
+
+  return blobPromise
+  .then(blob => blob != null ? new Response(blob) : undefined)
 }
 
 function update (url) {
@@ -73,11 +127,4 @@ function update (url) {
     manifestPromise,
     torrentPromise
   ])
-}
-
-function _normalizePath (filePath) {
-  if (filePath.startsWith('/')) filePath = filePath.substr(1)
-  filePath = path.normalize(filePath)
-  if (filePath === '.') filePath = ''
-  return filePath
 }
