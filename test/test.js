@@ -108,28 +108,28 @@ describe('sanity check', function () {
   })
 
   it('planktos.fetch()', function () {
-    return planktos.fetch(new Request(base + 'foobar.txt'), {scope: base})
+    return planktos.fetch(new Request(base + 'foobar.txt'), {root: base})
     .then(response => response.blob())
     .then(blob => blobToText(blob))
     .then(text => assert(text, 'foobar\n'))
   })
 
   it('planktos.fetch() - non normalized url', function () {
-    return planktos.fetch(new Request(base + '///.////foobar.txt'), {scope: base})
+    return planktos.fetch(new Request(base + '///.////foobar.txt'), {root: base})
     .then(response => response.blob())
     .then(blob => blobToText(blob))
     .then(text => assert(text, 'foobar\n'))
   })
 
   it('planktos.fetch() with string', function () {
-    return planktos.fetch(location.origin + base + 'foobar.txt', {scope: base})
+    return planktos.fetch(location.origin + base + 'foobar.txt', {root: base})
     .then(response => response.blob())
     .then(blob => blobToText(blob))
     .then(text => assert(text, 'foobar\n'))
   })
 
   it('planktos.fetch() implied index html', function () {
-    return planktos.fetch(location.origin + base + 'foo', {scope: base})
+    return planktos.fetch(location.origin + base + 'foo', {root: base})
     .then(response => response.blob())
     .then(blob => blobToText(blob))
     .then(text => assert(text, 'bar\n'))
@@ -137,21 +137,21 @@ describe('sanity check', function () {
 
   it('planktos.fetch() with invalid request', function () {
     assert.throws(() => {
-      planktos.fetch({}, {scope: base})
+      planktos.fetch({}, {root: base})
     })
     assert.throws(() => {
-      planktos.fetch(null, {scope: base})
+      planktos.fetch(null, {root: base})
     })
     assert.throws(() => {
-      planktos.fetch('http://example.com' + base + 'foobar.txt', {scope: base})
+      planktos.fetch('http://example.com' + base + 'foobar.txt', {root: base})
     })
     assert.throws(() => {
-      planktos.fetch(new Request(base + 'foobar.txt', {method: 'POST'}), {scope: base})
+      planktos.fetch(new Request(base + 'foobar.txt', {method: 'POST'}), {root: base})
     })
   })
 
   it('planktos.fetch() and inject for non-html files', function () {
-    return planktos.fetch(location.origin + base + 'foobar.txt', {scope: base, inject: true})
+    return planktos.fetch(location.origin + base + 'foobar.txt', {root: base, inject: true})
     .then(response => response.blob())
     .then(blob => blobToText(blob))
     .then(text => {
@@ -161,7 +161,7 @@ describe('sanity check', function () {
   })
 
   it('planktos.fetch() and inject for html files', function () {
-    return planktos.fetch(location.origin + base + 'foo/', {scope: base, inject: true})
+    return planktos.fetch(location.origin + base + 'foo/', {root: base, inject: true})
     .then(response => response.blob())
     .then(blob => blobToText(blob))
     .then(text => {
@@ -178,7 +178,7 @@ describe('sanity check', function () {
       base + 'planktos/install.js'
     ]
     return Promise.all(preCached.map(fpath => {
-      return planktos.fetch(new Request(fpath), {scope: base})
+      return planktos.fetch(new Request(fpath), {root: base})
     }))
     .then(responses => responses.forEach(r => {
       assert.notEqual(r, undefined)

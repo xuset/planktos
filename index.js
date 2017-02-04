@@ -77,11 +77,11 @@ function fetch (req, opts) {
     modUrl.search = (url.search === '' ? '?' : url.search + '&') + 'noPlanktosInjection'
     let html = (isHTML ? injection.docWrite : injection.iframe)
                .replace('{{url}}', modUrl.toString())
-               .replace('{{scope}}', opts.scope ? opts.scope : '')
+               .replace('{{root}}', opts.root ? opts.root : '')
     blobPromise = Promise.resolve(new Blob([html], {type: 'text/html'}))
   } else {
-    // fpath is relative to the service worker scope if opts.scope was given
-    let fpath = opts.scope ? url.pathname.replace(opts.scope, '') : url.pathname
+    // fpath is relative to the service worker scope if opts.root was given
+    let fpath = opts.root ? url.pathname.replace(opts.root, '') : url.pathname
 
     blobPromise = Promise.all([
       global.caches.open('planktos')

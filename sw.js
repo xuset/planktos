@@ -3,7 +3,7 @@
 const planktos = require('.')
 
 // The location of the planktos root directory
-const scope = location.pathname.substring(0, location.pathname.lastIndexOf('/'))
+const root = location.pathname.substring(0, location.pathname.lastIndexOf('/'))
 let available = {}
 let delegator = null
 
@@ -23,7 +23,7 @@ function onFetch (event) {
   assignDelegator()
 
   // Fallback to browser http if the file was not found in the torrent or an error occures
-  let promise = planktos.fetch(event, {scope: scope})
+  let promise = planktos.fetch(event, {root: root})
   .then(response => response != null ? response : fetch(event.request))
   .catch(err => {
     console.log('PLANKTOS-ERROR', err)
@@ -34,7 +34,7 @@ function onFetch (event) {
 }
 
 function onInstall (event) {
-  event.waitUntil(planktos.update(scope).then(() => console.log('PLANKTOS-INSTALLED')))
+  event.waitUntil(planktos.update(root).then(() => console.log('PLANKTOS-INSTALLED')))
 }
 
 function onMessage (event) {
