@@ -89,7 +89,7 @@ function fetch (req, opts) {
         .then(r => r ? r.blob() : undefined),
       getFile(fpath)
         .then(f => f ? f.getBlob() : undefined)
-    ]).then(blobs => blobs[0] || blobs[1])
+    ]).then(blobs => blobs.find(b => b != null))
   }
 
   return blobPromise
@@ -98,21 +98,21 @@ function fetch (req, opts) {
 
 function update (url) {
   if (!url) url = ''
-  if (url.endsWith('/')) url = url.substr(0, url.length - 1)
+  url = path.normalize(url)
 
   let cachePromise = global.caches.open('planktos')
-  .then((cache) => cache.addAll(preCached.map(f => url + f)))
+  .then(cache => cache.addAll(preCached.map(f => path.join(url, f))))
   .then(() => global.caches.open('planktos'))
 
   let manifestPromise = cachePromise
-  .then(cache => cache.match(url + '/planktos/manifest.json'))
+  .then(cache => cache.match(path.join(url, 'planktos/manifest.json')))
   .then(response => response.json())
   .then(json => {
     return persistent.set('manifest', json)
   })
 
   let torrentPromise = cachePromise
-  .then(cache => cache.match(url + '/planktos/root.torrent'))
+  .then(cache => cache.match(path.join(url, 'planktos/root.torrent')))
   .then(response => response.arrayBuffer())
   .then(arrayBuffer => {
     let buffer = Buffer.from(arrayBuffer)

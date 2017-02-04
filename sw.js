@@ -17,20 +17,21 @@ function onFetch (event) {
   let url = new URL(event.request.url)
 
   if (url.host !== location.host || event.request.method !== 'GET') return
+  if (url.pathname.replace(root, '').startsWith('/planktos/files/')) return
 
   console.log('PLANKTOS-FETCH', 'url=' + url.pathname)
 
   assignDelegator()
 
   // Fallback to browser http if the file was not found in the torrent or an error occures
-  let promise = planktos.fetch(event, {root: root})
+  let responsePromise = planktos.fetch(event, {root: root})
   .then(response => response != null ? response : fetch(event.request))
   .catch(err => {
     console.log('PLANKTOS-ERROR', err)
     return fetch(event.request)
   })
 
-  event.respondWith(promise)
+  event.respondWith(responsePromise)
 }
 
 function onInstall (event) {

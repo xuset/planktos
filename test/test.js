@@ -111,28 +111,28 @@ describe('sanity check', function () {
     return planktos.fetch(new Request(base + 'foobar.txt'), {root: base})
     .then(response => response.blob())
     .then(blob => blobToText(blob))
-    .then(text => assert(text, 'foobar\n'))
+    .then(text => assert.equal(text, 'foobar\n'))
   })
 
   it('planktos.fetch() - non normalized url', function () {
     return planktos.fetch(new Request(base + '///.////foobar.txt'), {root: base})
     .then(response => response.blob())
     .then(blob => blobToText(blob))
-    .then(text => assert(text, 'foobar\n'))
+    .then(text => assert.equal(text, 'foobar\n'))
   })
 
   it('planktos.fetch() with string', function () {
     return planktos.fetch(location.origin + base + 'foobar.txt', {root: base})
     .then(response => response.blob())
     .then(blob => blobToText(blob))
-    .then(text => assert(text, 'foobar\n'))
+    .then(text => assert.equal(text, 'foobar\n'))
   })
 
   it('planktos.fetch() implied index html', function () {
     return planktos.fetch(location.origin + base + 'foo', {root: base})
     .then(response => response.blob())
     .then(blob => blobToText(blob))
-    .then(text => assert(text, 'bar\n'))
+    .then(text => assert.equal(text, 'bar\n'))
   })
 
   it('planktos.fetch() with invalid request', function () {
