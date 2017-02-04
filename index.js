@@ -11,6 +11,7 @@ module.exports.downloader = require('./lib/downloader')
 module.exports.getFile = getFile
 module.exports.fetch = fetch
 
+const debug = require('debug')('planktos:lib')
 const IdbKvStore = require('idb-kv-store')
 const parseTorrent = require('parse-torrent-file')
 const _getFile = require('./lib/file')
@@ -40,6 +41,10 @@ function getTorrentMetaBuffer () { // TODO Fix parsing bug so this can be remove
 
 function getFile (fpath) {
   return _getFile(module.exports, fpath)
+  .then(file => {
+    debug('FILE path=' + (file || {}).path, 'found=' + (file != null), file)
+    return file
+  })
 }
 
 function fetch (req, opts) {
@@ -68,9 +73,13 @@ function fetch (req, opts) {
   if (req == null) throw new Error('Must provide a FetchEvent, Request, URL, or a string')
   if (url.origin !== global.location.origin) throw new Error('Cannot Fetch. Origin differs')
 
+  inject = 'inject' in opts ? opts.inject : inject
+
+  debug('FETCH-REQ url=' + url.pathname, 'inject=' + inject)
+
   // Generate response blob. Depends on if the downloader should be injected or not
   let blobPromise = null
-  if ('inject' in opts ? opts.inject : inject) {
+  if (inject) {
     let fname = url.pathname.substr(url.pathname.lastIndexOf('/') + 1)
     const isHTML = fname.endsWith('.html') || fname.endsWith('.htm') || !fname.includes('.')
     let modUrl = new URL(url.toString())
@@ -94,11 +103,17 @@ function fetch (req, opts) {
 
   return blobPromise
   .then(blob => blob != null ? new Response(blob) : undefined)
+  .then(response => {
+    debug('FETCH-RSP url=' + url.pathname, 'found=' + (response != null))
+    return response
+  })
 }
 
 function update (url) {
   if (!url) url = ''
   url = path.normalize(url)
+
+  debug('UPDATE url=' + url)
 
   let cachePromise = global.caches.open('planktos')
   .then(cache => cache.addAll(preCached.map(f => path.join(url, f))))
@@ -108,6 +123,7 @@ function update (url) {
   .then(cache => cache.match(path.join(url, 'planktos/manifest.json')))
   .then(response => response.json())
   .then(json => {
+    debug('MANIFEST', json)
     return persistent.set('manifest', json)
   })
 
@@ -117,6 +133,7 @@ function update (url) {
   .then(arrayBuffer => {
     let buffer = Buffer.from(arrayBuffer)
     let parsed = parseTorrent(buffer)
+    debug('TORRENTMETA', parsed)
     return Promise.all([
       persistent.set('torrentMetaBuffer', buffer),
       persistent.set('torrentMeta', parsed)
@@ -126,5 +143,5 @@ function update (url) {
   return Promise.all([
     manifestPromise,
     torrentPromise
-  ])
+  ]).then(() => debug('UPDATED'))
 }

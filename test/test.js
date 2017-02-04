@@ -4,6 +4,8 @@
 const assert = require('assert')
 const parseTorrent = require('parse-torrent-file')
 
+localStorage.debug = 'planktos*'
+
 describe('sanity check', function () {
   this.timeout(20000)
 
