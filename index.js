@@ -10,33 +10,21 @@ const preCached = [
   '/planktos/install.js'
 ]
 
-// TODO add getFileStream
-module.exports.getFileBlob = getFileBlob
 module.exports.update = update
 module.exports.preCached = preCached // TODO better way to handle preCached
 module.exports.getManifest = getManifest
-module.exports.getDownloaded = getDownloaded
 module.exports.getTorrentMeta = getTorrentMeta
 module.exports.getTorrentMetaBuffer = getTorrentMetaBuffer
 module.exports._normalizePath = _normalizePath
 module.exports.downloader = require('./lib/downloader')
+module.exports.getFile = getFile
 
-const ChunkStream = require('chunk-store-stream')
-const IdbChunkStore = require('indexeddb-chunk-store')
 const IdbKvStore = require('idb-kv-store')
-const toBlob = require('stream-to-blob')
 const parseTorrent = require('parse-torrent-file')
 const path = require('path')
+const _getFile = require('./lib/file')
 
-let waitingFetches = {}
 let persistent = new IdbKvStore('planktos')
-let downloaded = new IdbKvStore('planktos-downloaded')
-let chunkStore = null
-let downloadChannel = null
-
-function getDownloaded () {
-  return downloaded.json()
-}
 
 function getManifest () {
   return persistent.get('manifest')
@@ -50,49 +38,8 @@ function getTorrentMetaBuffer () { // TODO Fix parsing bug so this can be remove
   return persistent.get('torrentMetaBuffer')
 }
 
-function getFileBlob (filePath) {
-  if (typeof BroadcastChannel === 'undefined') throw new Error('No BroadcastChannel support')
-
-  if (!downloadChannel) {
-    downloadChannel = new BroadcastChannel('planktos-downloaded')
-    downloadChannel.addEventListener('message', onDownload)
-  }
-
-  filePath = _normalizePath(filePath)
-  return persistent.get(['manifest', 'torrentMeta']).then(result => {
-    let [manifest, torrentMeta] = result
-
-    // If the `filePath` cannot be found in the manifest, try to search for the index file
-    let indexFilePathCandidates = ['index.html', 'index.htm'].map((filename) => path.join(filePath, filename))
-    let hash = manifest[filePath] || manifest[indexFilePathCandidates.find((fpath) => Object.keys(manifest).includes(fpath))]
-    let fileInfo = torrentMeta.files.find(f => f.name === hash)
-
-    if (!fileInfo) {
-      return Promise.reject(new Error('File not found'))
-    }
-
-    chunkStore = chunkStore || new IdbChunkStore(torrentMeta.pieceLength, {name: torrentMeta.infoHash})
-
-    return downloaded.get(hash).then(isDownloaded => {
-      if (isDownloaded) {
-        let stream = ChunkStream.read(chunkStore, chunkStore.chunkLength, {
-          length: torrentMeta.length
-        })
-        return new Promise(function (resolve, reject) {
-          toBlob(stream, function (err, blob) {
-            if (err) return reject(err)
-            resolve(blob.slice(fileInfo.offset, fileInfo.offset + fileInfo.length))
-          })
-        })
-      } else {
-        // Defer until the file finishes downloading
-        return new Promise(function (resolve) {
-          if (!waitingFetches[hash]) waitingFetches[hash] = []
-          waitingFetches[hash].push(resolve)
-        })
-      }
-    })
-  })
+function getFile (fpath) {
+  return _getFile(this, fpath)
 }
 
 function update (url) {
@@ -126,28 +73,6 @@ function update (url) {
     manifestPromise,
     torrentPromise
   ])
-}
-
-function onDownload () {
-  return Promise.all([
-    persistent.get('manifest'),
-    downloaded.json()
-  ]).then(result => {
-    let [manifest, downloaded] = result
-    for (let hash in downloaded) {
-      if (hash in waitingFetches) {
-        let filePath = Object.keys(manifest).find(fname => manifest[fname] === hash)
-        let waiters = waitingFetches[hash]
-        delete waitingFetches[hash]
-        getFileBlob(filePath)
-        .then(b => {
-          for (let p of waiters) {
-            p(b)
-          }
-        })
-      }
-    }
-  })
 }
 
 function _normalizePath (filePath) {

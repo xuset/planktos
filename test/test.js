@@ -37,11 +37,6 @@ describe('sanity check', function () {
     .then(manifest => assert('index.html' in manifest))
   })
 
-  it('getDownloaded()', function () {
-    return planktos.getDownloaded()
-    .then(downloaded => 'index.html' in downloaded)
-  })
-
   it('getTorrentMeta()', function () {
     return planktos.getTorrentMeta()
     .then(torrentMeta => parseTorrent.encode(torrentMeta))
@@ -52,8 +47,37 @@ describe('sanity check', function () {
     .then(buffer => assert.notEqual(buffer.length, 0))
   })
 
-  it('getFileBlob()', function () {
-    return planktos.getFileBlob('foobar.txt')
+  it('getFile()', function () {
+    return planktos.getFile('/foo')
+    .then(f => {
+      assert.equal(f.path, 'foo/index.html')
+      assert.equal(f.hash, 'e242ed3bffccdf271b7fbaf34ed72d089537b42f')
+      assert.equal(f.length, 4)
+      assert(typeof f.offset === 'number')
+      assert('torrentMeta' in f)
+    })
+  })
+
+  it('file.getStream()', function () {
+    return planktos.getFile('foobar.txt')
+    .then(f => f.getStream())
+    .then(stream => {
+      return new Promise(resolve => {
+        var buffer = Buffer.alloc(0)
+        stream.on('data', chunk => {
+          buffer = Buffer.concat([buffer, chunk])
+        })
+        stream.on('end', (c) => {
+          assert(buffer.equals(Buffer.from('foobar\n')))
+          resolve()
+        })
+      })
+    })
+  })
+
+  it('file.getFileBlob()', function () {
+    return planktos.getFile('foobar.txt')
+    .then(f => f.getBlob())
     .then(blob => blobToText(blob))
     .then(text => {
       assert.equal(text, 'foobar\n')
@@ -68,20 +92,27 @@ describe('sanity check', function () {
     })
   })
 
-  it('getFileBlob() - implied index - with slash', function () {
-    return planktos.getFileBlob('/foo/')
+  it('file.getBlob() - implied index - with slash', function () {
+    return planktos.getFile('/foo/')
+    .then(f => f.getBlob())
     .then(blob => blobToText(blob))
     .then(text => {
       assert.equal(text, 'bar\n')
     })
   })
 
-  it('getFileBlob() - implied index - without slash', function () {
-    return planktos.getFileBlob('/foo')
+  it('file.getBlob() - implied index - without slash', function () {
+    return planktos.getFile('/foo')
+    .then(f => f.getBlob())
     .then(blob => blobToText(blob))
     .then(text => {
       assert.equal(text, 'bar\n')
     })
+  })
+
+  it('getFile() - file does not exist', function () {
+    return planktos.getFile('/doesNotExist.html')
+    .catch(err => assert.equal(err.message, 'File not found'))
   })
 
   it('no iframe injected into html', function () {
