@@ -54,7 +54,7 @@ function fetch (req, opts) {
 
   // Convert a FetchEvent to Request
   if (global.FetchEvent && req instanceof global.FetchEvent) {
-    inject = req.clientId == null
+    inject = req.clientId == null // This is the initial request of a new webpage
     req = req.request // req is now an instance of Request
   }
 
@@ -70,7 +70,7 @@ function fetch (req, opts) {
     url = new URL(req)
   }
 
-  if (req == null) throw new Error('Must provide a FetchEvent, Request, URL, or a string')
+  if (url == null) throw new Error('Must provide a FetchEvent, Request, URL, or a url string')
   if (url.origin !== global.location.origin) throw new Error('Cannot Fetch. Origin differs')
 
   inject = 'inject' in opts ? opts.inject : inject
@@ -83,7 +83,7 @@ function fetch (req, opts) {
     let fname = url.pathname.substr(url.pathname.lastIndexOf('/') + 1)
     const isHTML = fname.endsWith('.html') || fname.endsWith('.htm') || !fname.includes('.')
     let modUrl = new URL(url.toString())
-    modUrl.search = (url.search === '' ? '?' : url.search + '&') + 'noPlanktosInjection'
+    modUrl.search = (modUrl.search === '' ? '?' : modUrl.search + '&') + 'noPlanktosInjection'
     let html = (isHTML ? injection.docWrite : injection.iframe)
                .replace('{{url}}', modUrl.toString())
                .replace('{{root}}', opts.root ? opts.root : '')
@@ -95,9 +95,9 @@ function fetch (req, opts) {
     blobPromise = Promise.all([
       global.caches.open('planktos')
         .then(c => c.match(path.normalize(url.pathname)))
-        .then(r => r ? r.blob() : undefined),
+        .then(resp => resp ? resp.blob() : undefined),
       getFile(fpath)
-        .then(f => f ? f.getBlob() : undefined)
+        .then(file => file ? file.getBlob() : undefined)
     ]).then(blobs => blobs.find(b => b != null))
   }
 

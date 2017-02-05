@@ -46,7 +46,7 @@ function setup (rootDir, includes, opts, cb) {
   if (!fs.existsSync(dstDir)) fs.mkdirSync(dstDir)
   if (!fs.existsSync(filesDir)) fs.mkdirSync(filesDir)
 
-  copyAsHash(rootDir, includes, dstDir, filesDir, function (err, mappings) {
+  copyAsHash(includes, dstDir, filesDir, function (err, mappings) {
     if (err) return cb(err)
 
     let torrentFiles = mappings.map(e => absPath(e.dst))
@@ -79,7 +79,7 @@ function writeManifestSync (srcDir, dstDir, filesDir, mappings) {
   fs.writeFileSync(dstDir + '/manifest.json', buff)
 }
 
-function copyAsHash (rootDir, srcList, dstDir, filesDir, cb) {
+function copyAsHash (srcList, dstDir, filesDir, cb) {
   let files = []
 
   for (let item of srcList) {
