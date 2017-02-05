@@ -3,9 +3,9 @@ npm-debug.log
 *.swp
 *.js.map
 example/planktos
-example/planktos.sw.min.js
+example/planktos.sw.js
 test/www/planktos
-test/www/planktos.sw.min.js
+test/www/planktos.sw.js
 
 # Do not include in .npmignore
 build

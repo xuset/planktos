@@ -35,7 +35,7 @@ describe('sanity', function () {
         assert(getContents('/planktos/files/' + pathToHash['dir/nested.txt']).equals(new Buffer(pathToContents['dir/nested.txt'])))
         assert.notEqual(getContents('/planktos/install.js').length, 0)
         assert.notEqual(getContents('/planktos/planktos.min.js').length, 0)
-        assert.notEqual(getContents('/planktos.sw.min.js').length, 0)
+        assert.notEqual(getContents('/planktos.sw.js').length, 0)
 
         done()
       })
@@ -69,7 +69,7 @@ describe('single file torrent', function () {
         assert(getContents('/planktos/files/' + pathToHash['foo.txt']).equals(new Buffer(pathToContents['foo.txt'])))
         assert.notEqual(getContents('/planktos/install.js').length, 0)
         assert.notEqual(getContents('/planktos/planktos.min.js').length, 0)
-        assert.notEqual(getContents('/planktos.sw.min.js').length, 0)
+        assert.notEqual(getContents('/planktos.sw.js').length, 0)
 
         done()
       })

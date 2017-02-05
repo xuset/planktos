@@ -3,14 +3,10 @@
   "ignore": [
     "*.map",
     "build",
-    "example/planktos.sw.min.js",
+    "example/planktos.sw.js",
     "example/planktos",
-    "test/www/planktos.sw.min.js",
+    "test/www/planktos.sw.js",
     "test/www/planktos"
-  ],
-  "execMap": {
-    "rb": "ruby",
-    "pde": "processing --sketch={{pwd}} --run"
-  }
+  ]
 }
 

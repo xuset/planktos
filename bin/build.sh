@@ -7,18 +7,6 @@ PATH=$PATH:./node_modules/.bin
 mkdir -p build
 rm build/* || true
 
-# Build sw
-
-browserify sw.js --ignore webtorrent --debug \
- | exorcist build/planktos.sw.js.map \
- > build/planktos.sw.js
-
-uglifyjs build/planktos.sw.js \
-  --in-source-map build/planktos.sw.js.map \
-  --source-map build/planktos.sw.min.js.map \
-  --source-map-url planktos.sw.min.js.map \
- > build/planktos.sw.min.js
-
 # Build lib
 
 browserify index.js --debug -s planktos \
