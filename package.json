@@ -16,6 +16,7 @@
     "readable-stream": "^2.2.2",
     "run-parallel-limit": "^1.0.3",
     "stream-to-blob": "^1.0.0",
+    "tab-elect": "^0.1.0",
     "webtorrent": "^0.98.0"
   },
   "devDependencies": {

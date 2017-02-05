@@ -42,7 +42,7 @@ function getTorrentMetaBuffer () { // TODO Fix parsing bug so this can be remove
 function getFile (fpath) {
   return _getFile(module.exports, fpath)
   .then(file => {
-    debug('FILE path=' + (file || {}).path, 'found=' + (file != null), file)
+    debug('FILE path=' + (file || {}).path, 'found=' + (file != null))
     return file
   })
 }
@@ -143,5 +143,5 @@ function update (url) {
   return Promise.all([
     manifestPromise,
     torrentPromise
-  ]).then(() => debug('UPDATED'))
+  ])
 }
