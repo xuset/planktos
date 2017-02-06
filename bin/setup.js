@@ -36,6 +36,7 @@ function setup (rootDir, includes, opts, cb) {
   rootDir = absPath(rootDir)
   includes = includes.map(p => absPath(p))
   const dstDir = rootDir + '/' + RESERVED_DIR
+  const filesDir = dstDir + '/files'
   if (!opts) opts = {}
 
   if (includes.find(f => !isNested(rootDir, f))) {
@@ -43,16 +44,17 @@ function setup (rootDir, includes, opts, cb) {
   }
 
   if (!fs.existsSync(dstDir)) fs.mkdirSync(dstDir)
+  if (!fs.existsSync(filesDir)) fs.mkdirSync(filesDir)
 
-  copyAsHash(rootDir, includes, dstDir, function (err, mappings) {
+  copyAsHash(includes, dstDir, filesDir, function (err, mappings) {
     if (err) return cb(err)
 
     let torrentFiles = mappings.map(e => absPath(e.dst))
 
     // From BitTorrent Documentation: "In the single file case, the name key is the name of
     // a file, in the multiple file case, it's the name of a directory."
-    opts.name = torrentFiles.length === 1
-        ? torrentFiles[0].slice(torrentFiles[0].lastIndexOf('/') + 1) : RESERVED_DIR
+    opts.name = torrentFiles.length !== 1 ? RESERVED_DIR + '/files'
+        : torrentFiles[0].slice(torrentFiles[0].lastIndexOf('/') + 1)
 
     createTorrent(torrentFiles, opts, function (err, torrent) {
       if (err) return cb(err)
@@ -61,23 +63,23 @@ function setup (rootDir, includes, opts, cb) {
         if (err) return cb(err)
 
         fs.writeFileSync(dstDir + '/root.torrent', torrent)
-        writeManifestSync(rootDir, dstDir, mappings)
+        writeManifestSync(rootDir, dstDir, filesDir, mappings)
         cb(null)
       })
     })
   })
 }
 
-function writeManifestSync (srcDir, dstDir, mappings) {
+function writeManifestSync (srcDir, dstDir, filesDir, mappings) {
   let relMappings = {}
   for (let map of mappings) {
-    relMappings[map.src.substr(srcDir.length + 1)] = map.dst.substr(dstDir.length + 1)
+    relMappings[map.src.substr(srcDir.length + 1)] = map.dst.substr(filesDir.length + 1)
   }
   let buff = new Buffer(JSON.stringify(relMappings))
   fs.writeFileSync(dstDir + '/manifest.json', buff)
 }
 
-function copyAsHash (rootDir, srcList, dstDir, cb) {
+function copyAsHash (srcList, dstDir, filesDir, cb) {
   let files = []
 
   for (let item of srcList) {
@@ -85,7 +87,7 @@ function copyAsHash (rootDir, srcList, dstDir, cb) {
   }
 
   let tasks = files.map(fname => {
-    return function (cc) { copyFileAsHash(fname, dstDir, cc) }
+    return function (cc) { copyFileAsHash(fname, filesDir, cc) }
   })
   parallelLimit(tasks, FS_CONCURRENCY, cb)
 }

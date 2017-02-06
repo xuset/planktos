@@ -1,8 +1,10 @@
-/* eslint-env mocha */
+/* eslint-env mocha, browser */
 /* global planktos */
 
 const assert = require('assert')
 const parseTorrent = require('parse-torrent-file')
+
+localStorage.debug = 'planktos*'
 
 describe('sanity check', function () {
   this.timeout(20000)
@@ -58,12 +60,17 @@ describe('sanity check', function () {
     })
   })
 
+  it('getFile() - non normalized url', function () {
+    return planktos.getFile('///.//foo////')
+    .then(f => assert.equal(f.path, 'foo/index.html'))
+  })
+
   it('file.getStream()', function () {
     return planktos.getFile('foobar.txt')
     .then(f => f.getStream())
     .then(stream => {
       return new Promise(resolve => {
-        var buffer = Buffer.alloc(0)
+        let buffer = Buffer.alloc(0)
         stream.on('data', chunk => {
           buffer = Buffer.concat([buffer, chunk])
         })
@@ -79,14 +86,6 @@ describe('sanity check', function () {
     return planktos.getFile('foobar.txt')
     .then(f => f.getBlob())
     .then(blob => blobToText(blob))
-    .then(text => {
-      assert.equal(text, 'foobar\n')
-    })
-  })
-
-  it('fetch()', function () {
-    return iframe.contentWindow.fetch(base + 'foobar.txt')
-    .then(resp => resp.text())
     .then(text => {
       assert.equal(text, 'foobar\n')
     })
@@ -110,9 +109,108 @@ describe('sanity check', function () {
     })
   })
 
+  it('planktos.fetch()', function () {
+    return planktos.fetch(new Request(base + 'foobar.txt'), {root: base})
+    .then(response => response.blob())
+    .then(blob => blobToText(blob))
+    .then(text => assert.equal(text, 'foobar\n'))
+  })
+
+  it('planktos.fetch() - non normalized url', function () {
+    return planktos.fetch(new Request(base + '///.////foobar.txt'), {root: base})
+    .then(response => response.blob())
+    .then(blob => blobToText(blob))
+    .then(text => assert.equal(text, 'foobar\n'))
+  })
+
+  it('planktos.fetch() with string', function () {
+    return planktos.fetch(location.origin + base + 'foobar.txt', {root: base})
+    .then(response => response.blob())
+    .then(blob => blobToText(blob))
+    .then(text => assert.equal(text, 'foobar\n'))
+  })
+
+  it('planktos.fetch() implied index html', function () {
+    return planktos.fetch(location.origin + base + 'foo', {root: base})
+    .then(response => response.blob())
+    .then(blob => blobToText(blob))
+    .then(text => assert.equal(text, 'bar\n'))
+  })
+
+  it('planktos.fetch() with invalid request', function () {
+    assert.throws(() => {
+      planktos.fetch({}, {root: base})
+    })
+    assert.throws(() => {
+      planktos.fetch(null, {root: base})
+    })
+    assert.throws(() => {
+      planktos.fetch('http://example.com' + base + 'foobar.txt', {root: base})
+    })
+    assert.throws(() => {
+      planktos.fetch(new Request(base + 'foobar.txt', {method: 'POST'}), {root: base})
+    })
+  })
+
+  it('planktos.fetch() and inject for non-html files', function () {
+    return planktos.fetch(location.origin + base + 'foobar.txt', {root: base, inject: true})
+    .then(response => response.blob())
+    .then(blob => blobToText(blob))
+    .then(text => {
+      assert(text.startsWith('<!doctype html>'))
+      assert(text.includes('<iframe'))
+    })
+  })
+
+  it('planktos.fetch() and inject for html files', function () {
+    return planktos.fetch(location.origin + base + 'foo/', {root: base, inject: true})
+    .then(response => response.blob())
+    .then(blob => blobToText(blob))
+    .then(text => {
+      assert(text.startsWith('<!doctype html>'))
+      assert(text.includes('document.documentElement.innerHTML = '))
+    })
+  })
+
+  it('planktos.fetch() preCached', function () {
+    let preCached = [
+      base + 'planktos/root.torrent',
+      base + 'planktos/manifest.json',
+      base + 'planktos/planktos.min.js',
+      base + 'planktos/install.js'
+    ]
+    return Promise.all(preCached.map(fpath => {
+      return planktos.fetch(new Request(fpath), {root: base})
+    }))
+    .then(responses => responses.forEach(r => {
+      assert.notEqual(r, undefined)
+    }))
+  })
+
+  it('planktos.fetch() preCached non normalized url', function () {
+    return planktos.fetch(new Request(base + '//planktos/./root.torrent'))
+    .then(response => assert.notEqual(response, undefined))
+  })
+
+  it('window.fetch()', function () {
+    return iframe.contentWindow.fetch(base + 'foobar.txt')
+    .then(resp => resp.text())
+    .then(text => {
+      assert.equal(text, 'foobar\n')
+    })
+  })
+
+  it('window.fetch() implied index html', function () {
+    return iframe.contentWindow.fetch(base + 'foo')
+    .then(resp => resp.text())
+    .then(text => {
+      assert.equal(text, 'bar\n')
+    })
+  })
+
   it('getFile() - file does not exist', function () {
     return planktos.getFile('/doesNotExist.html')
-    .catch(err => assert.equal(err.message, 'File not found'))
+    .then(file => assert.equal(file, undefined))
   })
 
   it('no iframe injected into html', function () {
