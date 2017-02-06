@@ -25,7 +25,7 @@ browserify index.js --debug -s planktos \
  | exorcist build/planktos.js.map \
  > build/planktos.js
 
-uglifyjs build/planktos.js \
+uglifyjs build/planktos.js --mangle --compress warnings=false \
   --in-source-map build/planktos.js.map \
   --source-map build/planktos.min.js.map \
   --source-map-url planktos.min.js.map \
