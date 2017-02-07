@@ -29,6 +29,13 @@ Installing Planktos into a website is as simple as including the Planktos `insta
 
 A special thanks to the [WebTorrent](https://webtorrent.io) project, which is used extensively in Planktos.
 
+## Why
+
+- Let users load your static assets from each other, instead of hitting your web servers
+- Once a user visits your website for the first time, he/she will be able to load it even if your web servers go down
+- Planktos auto scales your website when traffic increases
+- Integrating Planktos into your website is stupidly simple
+
 ## Setup
 
 The Planktos command line interface (CLI) copies the necessary library files and packages your website's files into a torrent. To install the tool run:
