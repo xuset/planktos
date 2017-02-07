@@ -74,17 +74,18 @@ Blocking Issues:
 
 ## Contribute
 
-Contributions are welcome!
+Contributions are always welcome!
 
 Once you have some changes, you can test them with:
 
 `npm test`
 
-Or to automatically run the tests when the files are changed:
+Or to automatically run the tests when files are changed:
 
 `npm run watch`
 
-When the tests are running in the browser, if the browser is not focused it will sometimes pause the javascript code execution causing tests to timeout.
+NOTE: The browser tests may occasionally timeout if the browser is not focused
+
 
 ## License
 
