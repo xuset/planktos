@@ -23,7 +23,7 @@
   </a>
 </p>
 
-Planktos enables websites to serve their static content over BitTorrent by turning users into seeders. That means that users viewing a website with Planktos are also serving the website to other users. This allows website owners to significantly reduce hosting costs for static content, scale in real-time without provisioning more web servers, and prevent user impact during an outage. Planktos works in vanilla Chrome and Firefox (no browser extensions needed), using [WebTorrent](https://webtorrent.io) for peer-to-peer file transfers and service workers to reroute network requests over BitTorrent.
+Planktos enables websites to serve their static content over BitTorrent by turning users into seeders. That means that users viewing a website with Planktos are also serving the website to other users. This allows website owners to significantly reduce hosting costs for static content, scale in real-time without provisioning more web servers, and prevent user impact during an outage. Planktos works in vanilla Chrome and Firefox (no browser extensions needed).
 
 Installing Planktos into a website is as simple as including the Planktos `install.js` script and using the Planktos command line interface to bundle the website's static files into a torrent. For typical use cases, Planktos is designed to work out of the box, and for more specialized use cases, Planktos has a very simple interface for customization.
 
@@ -38,7 +38,7 @@ A special thanks to the [WebTorrent](https://webtorrent.io) project, which is us
 
 ## Setup
 
-The Planktos command line interface (CLI) copies the necessary library files and packages your website's files into a torrent. To install the tool run:
+The Planktos command line interface (CLI) copies the Planktos library files and packages your website's files into a torrent. To install the tool run:
 
 `npm install -g planktos`
 
@@ -55,8 +55,8 @@ After updating your website's files, users viewing the website won't receive the
 That was it. To test that everything is working as expected, use your browser's developer tools to inspect the network requests your website makes.
 
 Requirements for Planktos Websites:
- * The site must be served over https (or http on localhost), because service workers can only be registered on secure websites
- * The web server must support the `HTTP Range` header, because the server is used as the initial seeder (see WebTorrent webseed). Most web servers support this feature; however, some, like Python's _simplehttpserver_, do not.
+ * The site must be served over HTTPS (or HTTP on localhost), because service workers can only be registered on secure websites
+ * The web server must support the HTTP Range header, because the server is used as the initial seeder (see WebTorrent webseed). Most web servers support this feature; however, some, like Python's _simplehttpserver_, do not.
 
 ## How it Works
 
@@ -66,30 +66,26 @@ When the webpage is loaded for the first time, Planktos installs a service worke
 
 Due to the fact that service workers cannot use the [WebRTC](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API) API, the actual downloading of torrents is delegated to a Planktos controlled webpage. Planktos accomplishes this by injecting a downloader script into the webpage when the fetch request is intercepted. See the [W3C issue](https://github.com/w3c/webrtc-pc/issues/230) for more info on WebRTC in service workers.
 
-NOTE: If the browser does not have service worker support then everything goes over HTTP like it would without
+NOTE: If the browser does not have service worker support, then everything goes over HTTP like it would without
 Planktos.
 
 ## Limitations
 
 _Disclaimer:_ Planktos is still in early stages of development, and is not recommended for production use yet.
 
-Planktos relies on cutting edge browser APIs, including WebRTC and service workers, that have not been adopted in all browsers. In cases where any required APIs are not supported, Planktos defaults to loading webpages over HTTP as the browser normally would. It seems that development for most of these APIs is in progress for all major browsers, so we are hopeful that Planktos will support all browsers in the near future.
+Planktos relies on cutting edge browser APIs, including WebRTC and service workers, that have not been adopted in all browsers. In cases where any required APIs are not supported, Planktos defaults to loading webpages over HTTP as the browser normally would. It seems that development of most of these APIs is in progress for all major browsers, so we are hopeful that Planktos will work in all browsers in the near future.
 
 Blocking Issues:
  * No streaming support. The requested file must be downloaded in it's entirety before it can be displayed to the user. Currently, only chrome supports streaming from service workers while Firefox has an [open issue](https://bugzilla.mozilla.org/show_bug.cgi?id=1128959) for it.
- * Sharding into multiple torrents is not currently supported, so Planktos will be infeasible for large files
+ * Sharding into multiple torrents is not currently supported, so Planktos will be infeasible for large websites
 
 ## Contribute
 
 Contributions are always welcome!
 
-Once you have some changes, you can test them with:
+Once you have some changes, you can test them with: `npm test`
 
-`npm test`
-
-Or to automatically run the tests when files are changed:
-
-`npm run watch`
+Or to automatically run the tests when files are changed: `npm run watch`
 
 NOTE: The browser tests may occasionally timeout if the browser is not focused
 
