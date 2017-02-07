@@ -43,7 +43,7 @@ In the previous step, the Planktos CLI copied the service worker, named `plankto
 
 `<script src="/planktos/install.js"></script>`
 
-After updating your website's files, users viewing the website won't receive the updates until after the torrent is repackaged, which can be done by running the Planktos CLI again. 
+After updating your website's files, users viewing the website won't receive the updates until after the torrent is repackaged, which can be done by running the Planktos CLI again.
 
 That was it. To test that everything is working as expected, use your browser's developer tools to inspect the network requests your website makes.
 
@@ -53,18 +53,24 @@ Requirements for Planktos Websites:
 
 ## How it Works
 
-The Planktos CLI copies the website's static assets to `/planktos/[file_hash]` and packages those files into a torrent at `/planktos/root.torrent`. The CLI then generates a manifest that maps file paths to the their respective hashes, and stores it at `/planktos/manifest.json`. Finally, the CLI copies the Planktos library files including the service worker.
+The Planktos CLI copies the website's static assets to `/planktos/[file_hash]` and packages those files into a torrent at `/planktos/root.torrent`. The CLI then generates a manifest that maps file paths to their hashes. Finally, the CLI copies the Planktos library files, including the service worker.
 
-When the webpage is loaded, Planktos installs a service worker that intercepts all http requests made by the webpage. When a request is intercepted, Planktos checks to see if the requested file is in the torrent. If the file is in the torrent, it is downloaded from peers, otherwise, it is downloaded over http as it normally would be.
+When the webpage is loaded for the first time, Planktos installs a service worker that intercepts all HTTP requests made by the webpage. When the service worker intercepts a request, Planktos checks to see if the requested file is present in the torrent. If the file is in the torrent, it is downloaded from peers, otherwise, it is downloaded over HTTP as it normally would be.
 
 Due to the fact that service workers cannot use the [WebRTC](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API) API, the actual downloading of torrents is delegated to a Planktos controlled webpage. Planktos accomplishes this by injecting a downloader script into the webpage when the fetch request is intercepted. See the [W3C issue](https://github.com/w3c/webrtc-pc/issues/230) for more info on WebRTC in service workers.
 
-NOTE: If the browser does not have service worker support then everything goes over http like it would without
+NOTE: If the browser does not have service worker support then everything goes over HTTP like it would without
 Planktos.
 
-Planktos is still in early stages of development, and is not recommended for production use yet. Some blocking issues include:
- * Planktos cannot selectively download files within a torrent, so the entire torrent is downloaded. This doesn't matter for small sites, but it will not work for larger sites.
+## Limitations
+
+_Disclaimer:_ Planktos is still in early stages of development, and is not recommended for production use yet.
+
+Planktos relies on cutting edge browser APIs, including WebRTC and service workers, that have not been adopted in all browsers. In cases where any required APIs are not supported, Planktos defaults to loading webpages over HTTP as the browser normally would. It seems that development for most of these APIs is in progress for all major browsers, so we are hopeful that Planktos will support all browsers in the near future.
+
+Blocking Issues:
  * No streaming support. The requested file must be downloaded in it's entirety before it can be displayed to the user. Currently, only chrome supports streaming from service workers while Firefox has an [open issue](https://bugzilla.mozilla.org/show_bug.cgi?id=1128959) for it.
+ * Sharding into multiple torrents is not currently supported, so Planktos will be infeasible for large files
 
 ## Contribute
 
