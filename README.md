@@ -31,24 +31,24 @@ A special thanks to the [WebTorrent](https://webtorrent.io) project, which is us
 
 ## Setup
 
-The Planktos command line interface (CLI) copies the necessary library files and packages the website's files into a torrent. To install the tool run:
+The Planktos command line interface (CLI) copies the necessary library files and packages your website's files into a torrent. To install the tool run:
 
 `npm install -g planktos`
 
-Change your current working directory to the root of the website, and to package the website into a torrent run:
+Change your current working directory to the root of your website. To copy the Planktos library files and package your website into a torrent run:
 
 `planktos [directories and/or files...]`
 
-If no directories or files are passed in then the entire current working directory is packaged into the torrent. The tool will also copy the service worker, named `planktos.sw.min.js`, into the directory which reroutes network requests over BitTorrent. The service worker needs to be registered using the below install script or registered manually:
+In the previous step, the Planktos CLI copied the service worker, named `planktos.sw.min.js`, into the `/planktos/` directory. The service worker needs to be registered using the below install script (or manually):
 
 `<script src="/planktos/install.js"></script>`
 
-After updating the website's files, users viewing the website over Planktos won't receive the updated files until after the torrent is repackaged which can be done by running the Planktos CLI again.
+After updating your website's files, users viewing the website won't receive the updates until after the torrent is repackaged, which can be done by running the Planktos CLI again. 
 
-That was it. To test that everything is working as expected, use your browser's devtools to inspect the network requests your website makes.
+That was it. To test that everything is working as expected, use your browser's developer tools to inspect the network requests your website makes.
 
 Requirements for Planktos Websites:
- * The site must be served over https (or http on localhost), because service workers have restrictions on which types of sites can register them
+ * The site must be served over https (or http on localhost), because service workers can only be registered on secure websites
  * The web server must support the `HTTP Range` header, because the server is used as the initial seeder (see WebTorrent webseed). Most web servers support this feature; however, some, like Python's _simplehttpserver_, do not.
 
 ## How it Works
