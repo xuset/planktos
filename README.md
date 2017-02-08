@@ -32,7 +32,7 @@ A special thanks to the [WebTorrent](https://webtorrent.io) project, which is us
 ## Why
 
 - Let users load your static assets from each other, instead of hitting your web servers
-- Once a user visits your website for the first time, he/she will be able to load it even if your web servers go down
+- After a user visits your website for the first time, he/she will be able to load it even if your web servers go down
 - Planktos auto scales your website when traffic increases
 - Integrating Planktos into your website is stupidly simple
 
@@ -46,7 +46,7 @@ Change your current working directory to the root of your website. To copy the P
 
 `planktos [directories and/or files...]`
 
-In the previous step, the Planktos CLI copied the service worker, named `planktos.sw.min.js`, into the `/planktos/` directory. The service worker needs to be registered using the below install script (or manually):
+In the previous step, the Planktos CLI copied the service worker, named `planktos.sw.min.js`, into your website's root directory. The service worker needs to be registered using the below install script (or manually):
 
 `<script src="/planktos/install.js"></script>`
 
