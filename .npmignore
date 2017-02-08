@@ -9,5 +9,4 @@ test/www/planktos.sw.min.js
 
 # Different from .gitignore
 build/planktos.js
-build/planktos.sw.js
 build/test.js
