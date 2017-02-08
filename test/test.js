@@ -13,7 +13,7 @@ describe('sanity check', function () {
   let iframe = null
 
   before(function () {
-    return loadIframe(base)
+    return loadIframe(base + 'index.html')
     .then(elem => {
       // register the service worker in the iframe and wait for it to activate
       iframe = elem
