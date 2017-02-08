@@ -30,7 +30,7 @@ module.exports = function (config) {
     // test results reporter to use
     // possible values: 'dots', 'progress'
     // available reporters: https://npmjs.org/browse/keyword/karma-reporter
-    reporters: ['progress'],
+    reporters: process.env.CI ? ['dots', 'saucelabs'] : ['dots'],
 
     // web server port
     port: 9876,
@@ -45,33 +45,35 @@ module.exports = function (config) {
     // enable / disable watching file and executing tests whenever any file changes
     autoWatch: true,
 
+    browserNoActivityTimeout: process.env.CI ? 300 * 1000 : 10 * 1000,
+
     // start these browsers
     // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
-    browsers: ['Chrome'],
+    browsers: process.env.CI
+      ? ['SL_Chrome', 'SL_Firefox']
+      : ['Chrome'],
 
     // Continuous Integration mode
     // if true, Karma captures browsers, runs the tests and exits
-    singleRun: false,
+    singleRun: !!process.env.CI,
 
     // Concurrency level
     // how many browser should be started simultaneous
     concurrency: Infinity,
 
     sauceLabs: {
-      testName: 'Planktos tests'
+      testName: 'planktos'
     },
     customLaunchers: {
       SL_Chrome: {
         base: 'SauceLabs',
-        platform: 'Windows 10',
         browserName: 'chrome',
-        version: '54.0'
+        version: 'latest'
       },
       SL_Firefox: {
         base: 'SauceLabs',
-        platform: 'Windows 10',
         browserName: 'firefox',
-        version: '50.0'
+        version: 'latest'
       }
     }
   })
