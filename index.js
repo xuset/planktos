@@ -42,7 +42,7 @@ function getTorrentMetaBuffer () { // TODO Fix parsing bug so this can be remove
 function getFile (fpath) {
   return _getFile(module.exports, fpath)
   .then(file => {
-    debug('FILE path=' + (file || {}).path, 'found=' + (file != null), file)
+    debug('FILE path=' + (file || {}).path, 'found=' + (file != null))
     return file
   })
 }
@@ -85,8 +85,8 @@ function fetch (req, opts) {
     let modUrl = new URL(url.toString())
     modUrl.search = (modUrl.search === '' ? '?' : modUrl.search + '&') + 'noPlanktosInjection'
     let html = (isHTML ? injection.docWrite : injection.iframe)
-               .replace('{{url}}', modUrl.toString())
-               .replace('{{root}}', opts.root ? opts.root : '')
+               .replace(/{{url}}/g, modUrl.toString())
+               .replace(/{{root}}/g, opts.root ? opts.root : '')
     blobPromise = Promise.resolve(new Blob([html], {type: 'text/html'}))
   } else {
     // fpath is relative to the service worker scope if opts.root was given
@@ -143,5 +143,5 @@ function update (url) {
   return Promise.all([
     manifestPromise,
     torrentPromise
-  ]).then(() => debug('UPDATED'))
+  ])
 }
