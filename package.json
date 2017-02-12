@@ -59,7 +59,8 @@
       "Blob"
     ],
     "ignore": [
-      "build"
+      "build",
+      "test/www"
     ]
   },
   "author": "xuset",
