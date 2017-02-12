@@ -46,7 +46,7 @@ Change your current working directory to the root of your website. To copy the P
 
 `planktos [directories and/or files...]`
 
-In the previous step, the Planktos CLI copied the service worker, named `planktos.sw.min.js`, into your website's root directory. The service worker needs to be registered using the below install script (or manually):
+In the previous step, the Planktos CLI copied the service worker, named `planktos.sw.js`, into your website's root directory. The service worker needs to be registered using the below install script (or manually):
 
 `<script src="/planktos/install.js"></script>`
 
@@ -60,14 +60,11 @@ Requirements for Planktos Websites:
 
 ## How it Works
 
-The Planktos CLI copies the website's static assets to `/planktos/[file_hash]` and packages those files into a torrent at `/planktos/root.torrent`. The CLI then generates a manifest that maps file paths to their hashes. Finally, the CLI copies the Planktos library files, including the service worker.
+The Planktos CLI copies the website's static assets to `/planktos/files/[file_hash]` and packages those files into a torrent at `/planktos/root.torrent`. The CLI then generates a manifest that maps file paths to their hashes. Finally, the CLI copies the Planktos library files, including the service worker.
 
 When the webpage is loaded for the first time, Planktos installs a service worker that intercepts all HTTP requests made by the webpage. When the service worker intercepts a request, Planktos checks to see if the requested file is present in the torrent. If the file is in the torrent, it is downloaded from peers, otherwise, it is downloaded over HTTP as it normally would be.
 
 Due to the fact that service workers cannot use the [WebRTC](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API) API, the actual downloading of torrents is delegated to a Planktos controlled webpage. Planktos accomplishes this by injecting a downloader script into the webpage when the fetch request is intercepted. See the [W3C issue](https://github.com/w3c/webrtc-pc/issues/230) for more info on WebRTC in service workers.
-
-NOTE: If the browser does not have service worker support, then everything goes over HTTP like it would without
-Planktos.
 
 ## Limitations
 
