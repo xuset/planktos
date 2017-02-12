@@ -12,6 +12,7 @@ module.exports.startSeeder = startSeeder
 const IdbKvStore = require('idb-kv-store')
 const path = require('path')
 const parseTorrent = require('parse-torrent-file')
+const TabElect = require('tab-elect')
 const Snapshot = require('./lib/snapshot')
 const Seeder = require('./lib/seeder')
 
@@ -93,16 +94,20 @@ function update (rootUrl) {
 function startSeeder () {
   if (seeder) return seeder
   seeder = new Seeder()
+
+  let tabElect = new TabElect('planktos')
+  tabElect.on('elected', seeder.start.bind(seeder))
+  tabElect.on('deposed', seeder.stop.bind(seeder))
+
+  snapshotStore.on('set', function (change) {
+    if (change.key !== 'latest') seeder.add(new Snapshot(change.value))
+  })
+
   snapshotStore.json().then(json => {
     Object.keys(json)
     .filter(hash => hash !== 'latest')
     .forEach(hash => seeder.add(new Snapshot(json[hash])))
-
-    snapshotStore.on('set', function (change) {
-      if (change.key !== 'latest') {
-        seeder.add(new Snapshot(change.value))
-      }
-    })
   })
+
   return seeder
 }
