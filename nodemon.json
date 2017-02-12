@@ -5,8 +5,10 @@
     "build",
     "example/planktos.sw.js",
     "example/planktos",
-    "test/www/planktos.sw.js",
-    "test/www/planktos"
+    "test/www/v1/planktos.sw.js",
+    "test/www/v1/planktos",
+    "test/www/v2/planktos.sw.js",
+    "test/www/v2/planktos"
   ]
 }
 

@@ -7,7 +7,6 @@
   "dependencies": {
     "chunk-store-read-stream": "^1.0.0",
     "create-torrent": "^3.26.1",
-    "debug": "^2.6.0",
     "idb-kv-store": "^4.1.0",
     "indexeddb-chunk-store": "^2.2.0",
     "inherits": "^2.0.3",
@@ -36,7 +35,7 @@
   "scripts": {
     "standard": "standard",
     "bundle": "./bin/build.sh",
-    "pre-test": "standard && ./bin/build.sh && ./bin/setup.js -r test/www",
+    "pre-test": "standard && ./bin/build.sh && ./bin/setup.js -r test/www/v1 && ./bin/setup.js -r test/www/v2",
     "test": "npm run -s pre-test && mocha test/testCli.js && karma start",
     "watch": "nodemon --exec 'npm test'",
     "prepublish": "standard && ./bin/build.sh"

@@ -4,144 +4,110 @@ const global = typeof window !== 'undefined' ? window : self // eslint-disable-l
 if (global.WorkerGlobalScope) delete global.FileReaderSync
 
 module.exports.update = update
-module.exports.getManifest = getManifest
-module.exports.getTorrentMeta = getTorrentMeta
-module.exports.getTorrentMetaBuffer = getTorrentMetaBuffer
-module.exports.downloader = require('./lib/downloader')
+module.exports.getSnapshot = getSnapshot
 module.exports.getFile = getFile
 module.exports.fetch = fetch
+module.exports.startSeeder = startSeeder
 
-const debug = require('debug')('planktos:lib')
 const IdbKvStore = require('idb-kv-store')
-const parseTorrent = require('parse-torrent-file')
-const _getFile = require('./lib/file')
-const injection = require('./lib/injection')
 const path = require('path')
+const parseTorrent = require('parse-torrent-file')
+const TabElect = require('tab-elect')
+const Snapshot = require('./lib/snapshot')
+const Seeder = require('./lib/seeder')
 
-let persistent = new IdbKvStore('planktos')
+let latestSnapshot = null
+let snapshotPromise = null
+let snapshotStore = new IdbKvStore('planktos-snapshots')
+let seeder = null
 
 const preCached = [
-  '/planktos/root.torrent',
-  '/planktos/manifest.json',
   '/planktos/planktos.min.js',
   '/planktos/install.js'
 ]
 
-function getManifest () {
-  return persistent.get('manifest')
-}
-
-function getTorrentMeta () {
-  return persistent.get('torrentMeta')
-}
-
-function getTorrentMetaBuffer () { // TODO Fix parsing bug so this can be removed
-  return persistent.get('torrentMetaBuffer')
-}
-
 function getFile (fpath) {
-  return _getFile(module.exports, fpath)
-  .then(file => {
-    debug('FILE path=' + (file || {}).path, 'found=' + (file != null))
-    return file
-  })
+  return getSnapshot()
+  .then(snapshot => snapshot.getFile(fpath))
 }
 
 function fetch (req, opts) {
-  opts = opts || {}
-  let inject = false
-  let url = null
+  return getSnapshot()
+  .then(snapshot => snapshot.fetch(req, opts))
+}
 
-  // Convert a FetchEvent to Request
-  if (global.FetchEvent && req instanceof global.FetchEvent) {
-    inject = req.clientId == null // This is the initial request of a new webpage
-    req = req.request // req is now an instance of Request
-  }
+function getSnapshot () {
+  if (latestSnapshot) return Promise.resolve(latestSnapshot)
+  if (snapshotPromise) return snapshotPromise
 
-  // Convert a Request to an URL
-  if (req instanceof global.Request) {
-    url = new URL(req.url)
-    inject = inject && url.search.substr(1)
-             .split('&').find(s => s === 'noPlanktosInjection') == null
-    if (req.method !== 'GET') throw new Error('Only HTTP GET requests supported')
-  } else if (req instanceof URL) {
-    url = req
-  } else if (typeof req === 'string') {
-    url = new URL(req)
-  }
+  snapshotPromise = snapshotStore.get('latest')
+  .then(latest => {
+    snapshotPromise = null
+    if (latest == null) throw new Error('No local snapshot. Call planktos.update()')
+    latestSnapshot = new Snapshot(latest)
+    if (seeder) seeder.add(latestSnapshot)
+    return latestSnapshot
+  })
 
-  if (url == null) throw new Error('Must provide a FetchEvent, Request, URL, or a url string')
-  if (url.origin !== global.location.origin) throw new Error('Cannot Fetch. Origin differs')
+  return snapshotPromise
+}
 
-  inject = 'inject' in opts ? opts.inject : inject
+function update (rootUrl) {
+  if (!(rootUrl instanceof URL)) rootUrl = new URL(rootUrl, global.location.origin)
 
-  debug('FETCH-REQ url=' + url.pathname, 'inject=' + inject)
+  let torrentMetaUrl = new URL(path.join(rootUrl.pathname, 'planktos/root.torrent'), rootUrl)
+  let manifestUrl = new URL(path.join(rootUrl.pathname, 'planktos/manifest.json'), rootUrl)
+  let cacheUrls = preCached.map(f => new URL(path.join(rootUrl.pathname, f), rootUrl))
 
-  // Generate response blob. Depends on if the downloader should be injected or not
-  let blobPromise = null
-  if (inject) {
-    let fname = url.pathname.substr(url.pathname.lastIndexOf('/') + 1)
-    const isHTML = fname.endsWith('.html') || fname.endsWith('.htm') || !fname.includes('.')
-    let modUrl = new URL(url.toString())
-    modUrl.search = (modUrl.search === '' ? '?' : modUrl.search + '&') + 'noPlanktosInjection'
-    let html = (isHTML ? injection.docWrite : injection.iframe)
-               .replace(/{{url}}/g, modUrl.toString())
-               .replace(/{{root}}/g, opts.root ? opts.root : '')
-    blobPromise = Promise.resolve(new Blob([html], {type: 'text/html'}))
-  } else {
-    // fpath is relative to the service worker scope if opts.root was given
-    let fpath = opts.root ? url.pathname.replace(opts.root, '') : url.pathname
+  return Promise.all([
+    global.fetch(manifestUrl).then(response => response.json()),
+    global.fetch(torrentMetaUrl).then(response => response.arrayBuffer()),
+    snapshotStore.get('latest'),
+    global.caches.open('planktos').then(cache => cache.addAll(cacheUrls))
+  ])
+  .then(results => {
+    let [manifest, torrentMetaBuffer, latestObj] = results
+    let hash = parseTorrent(new Buffer(torrentMetaBuffer)).infoHash
 
-    blobPromise = Promise.all([
-      global.caches.open('planktos')
-        .then(c => c.match(path.normalize(url.pathname)))
-        .then(resp => resp ? resp.blob() : undefined),
-      getFile(fpath)
-        .then(file => file ? file.getBlob() : undefined)
-    ]).then(blobs => blobs.find(b => b != null))
-  }
+    if (latestObj != null && latestObj.hash === hash) return
 
-  return blobPromise
-  .then(blob => blob != null ? new Response(blob) : undefined)
-  .then(response => {
-    debug('FETCH-RSP url=' + url.pathname, 'found=' + (response != null))
-    return response
+    let snapshotObj = {
+      manifest: manifest,
+      torrentMetaBuffer: torrentMetaBuffer,
+      rootUrl: rootUrl.toString(),
+      hash: hash
+    }
+
+    return Promise.all([
+      snapshotStore.set('latest', snapshotObj),
+      snapshotStore.set(hash, snapshotObj)
+    ])
+  })
+  .then(() => {
+    if (latestSnapshot) latestSnapshot.close()
+    latestSnapshot = null
+    snapshotPromise = null
+    return getSnapshot()
   })
 }
 
-function update (url) {
-  if (!url) url = ''
-  url = path.normalize(url)
+function startSeeder () {
+  if (seeder) return seeder
+  seeder = new Seeder()
 
-  debug('UPDATE url=' + url)
+  let tabElect = new TabElect('planktos')
+  tabElect.on('elected', seeder.start.bind(seeder))
+  tabElect.on('deposed', seeder.stop.bind(seeder))
 
-  let cachePromise = global.caches.open('planktos')
-  .then(cache => cache.addAll(preCached.map(f => path.join(url, f))))
-  .then(() => global.caches.open('planktos'))
-
-  let manifestPromise = cachePromise
-  .then(cache => cache.match(path.join(url, 'planktos/manifest.json')))
-  .then(response => response.json())
-  .then(json => {
-    debug('MANIFEST', json)
-    return persistent.set('manifest', json)
+  snapshotStore.on('set', function (change) {
+    if (change.key !== 'latest') seeder.add(new Snapshot(change.value))
   })
 
-  let torrentPromise = cachePromise
-  .then(cache => cache.match(path.join(url, 'planktos/root.torrent')))
-  .then(response => response.arrayBuffer())
-  .then(arrayBuffer => {
-    let buffer = Buffer.from(arrayBuffer)
-    let parsed = parseTorrent(buffer)
-    debug('TORRENTMETA', parsed)
-    return Promise.all([
-      persistent.set('torrentMetaBuffer', buffer),
-      persistent.set('torrentMeta', parsed)
-    ])
+  snapshotStore.json().then(json => {
+    Object.keys(json)
+    .filter(hash => hash !== 'latest')
+    .forEach(hash => seeder.add(new Snapshot(json[hash])))
   })
 
-  return Promise.all([
-    manifestPromise,
-    torrentPromise
-  ])
+  return seeder
 }

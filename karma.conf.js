@@ -10,7 +10,7 @@ module.exports = function (config) {
     // list of files / patterns to load in the browser
     files: [
       './build/test.js',
-      './test/www/planktos/planktos.min.js',
+      './test/www/v1/planktos/planktos.min.js',
       {
         pattern: './test/www/**',
         included: false,
