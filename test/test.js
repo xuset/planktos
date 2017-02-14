@@ -46,18 +46,34 @@ describe('lib', function () {
   it('file.getStream()', function () {
     return planktos.getFile('foobar.txt')
     .then(f => f.getStream())
-    .then(stream => {
-      return new Promise(resolve => {
-        let buffer = Buffer.alloc(0)
-        stream.on('data', chunk => {
-          buffer = Buffer.concat([buffer, chunk])
-        })
-        stream.on('end', (c) => {
-          assert(buffer.equals(Buffer.from('foobar\n')))
-          resolve()
-        })
-      })
-    })
+    .then(stream => nodeStreamToString(stream))
+    .then(text => assert.equal(text, 'foobar\n'))
+  })
+
+  it('file.getStream() - ranged', function () {
+    return planktos.getFile('foobar.txt')
+    .then(f => f.getStream({start: 2, end: 4}))
+    .then(stream => nodeStreamToString(stream))
+    .then(text => assert.equal(text, 'oba'))
+  })
+
+  it('file.getStream() - bad range', function () {
+    return Promise.all([
+      planktos.getFile('foobar.txt')
+      .then(f => f.getStream({start: -1, end: 4}))
+      .then(() => assert(false))
+      .catch(err => assert(err instanceof Error)),
+
+      planktos.getFile('foobar.txt')
+      .then(f => f.getStream({start: 1, end: 0}))
+      .then(() => assert(false))
+      .catch(err => assert(err instanceof Error)),
+
+      planktos.getFile('foobar.txt')
+      .then(f => f.getStream({start: 8, end: 9}))
+      .then(() => assert(false))
+      .catch(err => assert(err instanceof Error))
+    ])
   })
 
   it('file.getFileBlob()', function () {
@@ -85,6 +101,39 @@ describe('lib', function () {
     .then(text => {
       assert.equal(text, 'bar\n')
     })
+  })
+
+  it('file.getBlob() - ranged', function () {
+    return planktos.getFile('/foo')
+    .then(f => f.getBlob({start: 0, end: 1}))
+    .then(blob => blobToText(blob))
+    .then(text => {
+      assert.equal(text, 'ba')
+    })
+  })
+
+  it('file.getWebStream()', function () {
+    if (typeof ReadableStream === 'undefined') return Promise.resolve()
+
+    return planktos.getFile('foobar.txt')
+    .then(f => f.getWebStream())
+    .then(stream => {
+      assert.equal(stream.length, 7)
+      return webStreamToString(stream)
+    })
+    .then(text => assert.equal(text, 'foobar\n'))
+  })
+
+  it('file.getWebStream() ranged', function () {
+    if (typeof ReadableStream === 'undefined') return Promise.resolve()
+
+    return planktos.getFile('foobar.txt')
+    .then(f => f.getWebStream({start: 1, end: 2}))
+    .then(stream => {
+      assert.equal(stream.length, 2)
+      return webStreamToString(stream)
+    })
+    .then(text => assert.equal(text, 'oo'))
   })
 
   it('planktos.fetch()', function () {
@@ -140,21 +189,23 @@ describe('lib', function () {
   })
 
   it('planktos.fetch() with invalid request', function () {
-    planktos.fetch({}, {root: v1Base})
-    .then(() => assert(false))
-    .catch(err => assert(err instanceof Error))
+    return Promise.all([
+      planktos.fetch({}, {root: v1Base})
+      .then(() => assert(false))
+      .catch(err => assert(err instanceof Error)),
 
-    planktos.fetch(null, {root: v1Base})
-    .then(() => assert(false))
-    .catch(err => assert(err instanceof Error))
+      planktos.fetch(null, {root: v1Base})
+      .then(() => assert(false))
+      .catch(err => assert(err instanceof Error)),
 
-    planktos.fetch('http://example.com' + v1Base + 'foobar.txt', {root: v1Base})
-    .then(() => assert(false))
-    .catch(err => assert(err instanceof Error))
+      planktos.fetch('http://example.com' + v1Base + 'foobar.txt', {root: v1Base})
+      .then(() => assert(false))
+      .catch(err => assert(err instanceof Error)),
 
-    planktos.fetch(new Request(v1Base + 'foobar.txt', {method: 'POST'}), {root: v1Base})
-    .then(() => assert(false))
-    .catch(err => assert(err instanceof Error))
+      planktos.fetch(new Request(v1Base + 'foobar.txt', {method: 'POST'}), {root: v1Base})
+      .then(() => assert(false))
+      .catch(err => assert(err instanceof Error))
+    ])
   })
 
   it('planktos.fetch() and inject for non-html files', function () {
@@ -482,5 +533,35 @@ function blobToText (blob) {
     function onerror () {
       reject(fr.error)
     }
+  })
+}
+
+function webStreamToString (stream) {
+  return new Promise(function (resolve, reject) {
+    let reader = stream.getReader()
+    let buffer = ''
+    reader.read().then(onRead)
+
+    function onRead (result) {
+      if (result.done) return resolve(buffer)
+
+      buffer += result.value.toString()
+      reader.read().then(onRead)
+    }
+  })
+}
+
+function nodeStreamToString (stream) {
+  return new Promise(function (resolve, reject) {
+    let buffer = ''
+    stream.on('data', chunk => {
+      buffer += chunk.toString()
+    })
+    stream.on('end', (c) => {
+      resolve(buffer)
+    })
+    stream.on('error', (err) => {
+      reject(err)
+    })
   })
 }
