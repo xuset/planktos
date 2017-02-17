@@ -46,18 +46,34 @@ describe('lib', function () {
   it('file.getStream()', function () {
     return planktos.getFile('foobar.txt')
     .then(f => f.getStream())
-    .then(stream => {
-      return new Promise(resolve => {
-        let buffer = Buffer.alloc(0)
-        stream.on('data', chunk => {
-          buffer = Buffer.concat([buffer, chunk])
-        })
-        stream.on('end', (c) => {
-          assert(buffer.equals(Buffer.from('foobar\n')))
-          resolve()
-        })
-      })
-    })
+    .then(stream => nodeStreamToString(stream))
+    .then(text => assert.equal(text, 'foobar\n'))
+  })
+
+  it('file.getStream() - ranged', function () {
+    return planktos.getFile('foobar.txt')
+    .then(f => f.getStream({start: 2, end: 4}))
+    .then(stream => nodeStreamToString(stream))
+    .then(text => assert.equal(text, 'oba'))
+  })
+
+  it('file.getStream() - bad range', function () {
+    return Promise.all([
+      planktos.getFile('foobar.txt')
+      .then(f => f.getStream({start: -1, end: 4}))
+      .then(() => assert(false))
+      .catch(err => assert(err instanceof Error)),
+
+      planktos.getFile('foobar.txt')
+      .then(f => f.getStream({start: 1, end: 0}))
+      .then(() => assert(false))
+      .catch(err => assert(err instanceof Error)),
+
+      planktos.getFile('foobar.txt')
+      .then(f => f.getStream({start: 8, end: 9}))
+      .then(() => assert(false))
+      .catch(err => assert(err instanceof Error))
+    ])
   })
 
   it('file.getFileBlob()', function () {
@@ -87,55 +103,120 @@ describe('lib', function () {
     })
   })
 
+  it('file.getBlob() - ranged', function () {
+    return planktos.getFile('/foo')
+    .then(f => f.getBlob({start: 0, end: 1}))
+    .then(blob => blobToText(blob))
+    .then(text => {
+      assert.equal(text, 'ba')
+    })
+  })
+
+  it('file.getWebStream()', function () {
+    if (typeof ReadableStream === 'undefined') return Promise.resolve()
+
+    return planktos.getFile('foobar.txt')
+    .then(f => f.getWebStream())
+    .then(stream => {
+      assert.equal(stream.length, 7)
+      return webStreamToString(stream)
+    })
+    .then(text => assert.equal(text, 'foobar\n'))
+  })
+
+  it('file.getWebStream() ranged', function () {
+    if (typeof ReadableStream === 'undefined') return Promise.resolve()
+
+    return planktos.getFile('foobar.txt')
+    .then(f => f.getWebStream({start: 1, end: 2}))
+    .then(stream => {
+      assert.equal(stream.length, 2)
+      return webStreamToString(stream)
+    })
+    .then(text => assert.equal(text, 'oo'))
+  })
+
   it('planktos.fetch()', function () {
     return planktos.fetch(new Request(v1Base + 'foobar.txt'), {root: v1Base})
-    .then(response => response.blob())
+    .then(response => {
+      assert.equal(response.status, 200)
+      assert.equal(response.statusText, 'OK')
+      assert.equal(response.headers.get('Content-Length'), '7')
+      assert.equal(response.headers.get('Accept-Ranges'), 'bytes')
+      return response.blob()
+    })
     .then(blob => blobToText(blob))
     .then(text => assert.equal(text, 'foobar\n'))
   })
 
   it('planktos.fetch() - non normalized url', function () {
     return planktos.fetch(new Request(v1Base + '///.////foobar.txt'), {root: v1Base})
-    .then(response => response.blob())
+    .then(response => {
+      assert.equal(response.status, 200)
+      assert.equal(response.statusText, 'OK')
+      assert.equal(response.headers.get('Content-Length'), '7')
+      assert.equal(response.headers.get('Accept-Ranges'), 'bytes')
+      return response.blob()
+    })
     .then(blob => blobToText(blob))
     .then(text => assert.equal(text, 'foobar\n'))
   })
 
   it('planktos.fetch() with string', function () {
     return planktos.fetch(location.origin + v1Base + 'foobar.txt', {root: v1Base})
-    .then(response => response.blob())
+    .then(response => {
+      assert.equal(response.status, 200)
+      assert.equal(response.statusText, 'OK')
+      assert.equal(response.headers.get('Content-Length'), '7')
+      assert.equal(response.headers.get('Accept-Ranges'), 'bytes')
+      return response.blob()
+    })
     .then(blob => blobToText(blob))
     .then(text => assert.equal(text, 'foobar\n'))
   })
 
   it('planktos.fetch() implied index html', function () {
     return planktos.fetch(location.origin + v1Base + 'foo', {root: v1Base})
-    .then(response => response.blob())
+    .then(response => {
+      assert.equal(response.status, 200)
+      assert.equal(response.statusText, 'OK')
+      assert.equal(response.headers.get('Content-Length'), '4')
+      assert.equal(response.headers.get('Accept-Ranges'), 'bytes')
+      return response.blob()
+    })
     .then(blob => blobToText(blob))
     .then(text => assert.equal(text, 'bar\n'))
   })
 
   it('planktos.fetch() with invalid request', function () {
-    planktos.fetch({}, {root: v1Base})
-    .then(() => assert(false))
-    .catch(err => assert(err instanceof Error))
+    return Promise.all([
+      planktos.fetch({}, {root: v1Base})
+      .then(() => assert(false))
+      .catch(err => assert(err instanceof Error)),
 
-    planktos.fetch(null, {root: v1Base})
-    .then(() => assert(false))
-    .catch(err => assert(err instanceof Error))
+      planktos.fetch(null, {root: v1Base})
+      .then(() => assert(false))
+      .catch(err => assert(err instanceof Error)),
 
-    planktos.fetch('http://example.com' + v1Base + 'foobar.txt', {root: v1Base})
-    .then(() => assert(false))
-    .catch(err => assert(err instanceof Error))
+      planktos.fetch('http://example.com' + v1Base + 'foobar.txt', {root: v1Base})
+      .then(() => assert(false))
+      .catch(err => assert(err instanceof Error)),
 
-    planktos.fetch(new Request(v1Base + 'foobar.txt', {method: 'POST'}), {root: v1Base})
-    .then(() => assert(false))
-    .catch(err => assert(err instanceof Error))
+      planktos.fetch(new Request(v1Base + 'foobar.txt', {method: 'POST'}), {root: v1Base})
+      .then(() => assert(false))
+      .catch(err => assert(err instanceof Error))
+    ])
   })
 
   it('planktos.fetch() and inject for non-html files', function () {
     return planktos.fetch(location.origin + v1Base + 'foobar.txt', {root: v1Base, inject: true})
-    .then(response => response.blob())
+    .then(response => {
+      assert.equal(response.status, 200)
+      assert.equal(response.statusText, 'OK')
+      assert.notEqual(response.headers.get('Content-Length'), null)
+      assert.equal(response.headers.get('Accept-Ranges'), 'bytes')
+      return response.blob()
+    })
     .then(blob => blobToText(blob))
     .then(text => {
       assert(text.startsWith('<!doctype html>'))
@@ -145,7 +226,13 @@ describe('lib', function () {
 
   it('planktos.fetch() and inject for html files', function () {
     return planktos.fetch(location.origin + v1Base + 'foo/', {root: v1Base, inject: true})
-    .then(response => response.blob())
+    .then(response => {
+      assert.equal(response.status, 200)
+      assert.equal(response.statusText, 'OK')
+      assert.notEqual(response.headers.get('Content-Length'), null)
+      assert.equal(response.headers.get('Accept-Ranges'), 'bytes')
+      return response.blob()
+    })
     .then(blob => blobToText(blob))
     .then(text => {
       assert(text.startsWith('<!doctype html>'))
@@ -163,12 +250,168 @@ describe('lib', function () {
     }))
     .then(responses => responses.forEach(r => {
       assert.notEqual(r, undefined)
+      assert.equal(r.status, 200)
+      assert.equal(r.statusText, 'OK')
+      assert.notEqual(r.headers.get('Content-Length'), null)
+      assert.equal(r.headers.get('Accept-Ranges'), 'bytes')
     }))
   })
 
   it('planktos.fetch() preCached non normalized url', function () {
     return planktos.fetch(new Request(v1Base + 'foo/../planktos/./planktos.min.js'))
     .then(response => assert.notEqual(response, undefined))
+  })
+
+  it('planktos.fetch() range header with zero start', function () {
+    var req = new Request(v1Base + 'foobar.txt', {
+      headers: {'Range': 'bytes=0-'}
+    })
+    return planktos.fetch(req, {root: v1Base})
+    .then(response => {
+      assert.equal(response.status, 206)
+      assert.equal(response.statusText, 'Partial Content')
+      assert.equal(response.headers.get('Content-Range'), 'bytes 0-6/7')
+      assert.equal(response.headers.get('Content-Length'), '7')
+      assert.equal(response.headers.get('Accept-Ranges'), 'bytes')
+      return response.blob()
+    })
+    .then(blob => blobToText(blob))
+    .then(text => {
+      assert.equal(text, 'foobar\n')
+    })
+  })
+
+  it('planktos.fetch() range header with start', function () {
+    var req = new Request(v1Base + 'foobar.txt', {
+      headers: {'Range': 'bytes=1-'}
+    })
+    return planktos.fetch(req, {root: v1Base})
+    .then(response => {
+      assert.equal(response.status, 206)
+      assert.equal(response.statusText, 'Partial Content')
+      assert.equal(response.headers.get('Content-Range'), 'bytes 1-6/7')
+      assert.equal(response.headers.get('Content-Length'), '6')
+      assert.equal(response.headers.get('Accept-Ranges'), 'bytes')
+      return response.blob()
+    })
+    .then(blob => blobToText(blob))
+    .then(text => {
+      assert.equal(text, 'oobar\n')
+    })
+  })
+
+  it('planktos.fetch() range header with start and end', function () {
+    var req = new Request(v1Base + 'foobar.txt', {
+      headers: {'Range': 'bytes=1-2'}
+    })
+    return planktos.fetch(req, {root: v1Base})
+    .then(response => {
+      assert.equal(response.status, 206)
+      assert.equal(response.statusText, 'Partial Content')
+      assert.equal(response.headers.get('Content-Range'), 'bytes 1-2/7')
+      assert.equal(response.headers.get('Content-Length'), '2')
+      assert.equal(response.headers.get('Accept-Ranges'), 'bytes')
+      return response.blob()
+    })
+    .then(blob => blobToText(blob))
+    .then(text => {
+      assert.equal(text, 'oo')
+    })
+  })
+
+  it('planktos.fetch() range header with equal start and end', function () {
+    var req = new Request(v1Base + 'foobar.txt', {
+      headers: {'Range': 'bytes=2-2'}
+    })
+    return planktos.fetch(req, {root: v1Base})
+    .then(response => {
+      assert.equal(response.status, 206)
+      assert.equal(response.statusText, 'Partial Content')
+      assert.equal(response.headers.get('Content-Range'), 'bytes 2-2/7')
+      assert.equal(response.headers.get('Content-Length'), '1')
+      assert.equal(response.headers.get('Accept-Ranges'), 'bytes')
+      return response.blob()
+    })
+    .then(blob => blobToText(blob))
+    .then(text => {
+      assert.equal(text, 'o')
+    })
+  })
+
+  it('planktos.fetch() range header with start and over extended end', function () {
+    var req = new Request(v1Base + 'foobar.txt', {
+      headers: {'Range': 'bytes=1-10000'}
+    })
+    return planktos.fetch(req, {root: v1Base})
+    .then(response => {
+      assert.equal(response.status, 206)
+      assert.equal(response.statusText, 'Partial Content')
+      assert.equal(response.headers.get('Content-Range'), 'bytes 1-6/7')
+      assert.equal(response.headers.get('Content-Length'), '6')
+      assert.equal(response.headers.get('Accept-Ranges'), 'bytes')
+      return response.blob()
+    })
+    .then(blob => blobToText(blob))
+    .then(text => {
+      assert.equal(text, 'oobar\n')
+    })
+  })
+
+  it('planktos.fetch() range header with invalid start and end', function () {
+    var req = new Request(v1Base + 'foobar.txt', {
+      headers: {'Range': 'bytes=3-2'}
+    })
+    return planktos.fetch(req, {root: v1Base})
+    .then(response => {
+      assert.equal(response.status, 200)
+      assert.equal(response.statusText, 'OK')
+      assert.equal(response.headers.get('Content-Range'), undefined)
+      assert.equal(response.headers.get('Content-Length'), '7')
+      assert.equal(response.headers.get('Accept-Ranges'), 'bytes')
+      return response.blob()
+    })
+    .then(blob => blobToText(blob))
+    .then(text => {
+      assert.equal(text, 'foobar\n')
+    })
+  })
+
+  it('planktos.fetch() range header with end but no start', function () {
+    var req = new Request(v1Base + 'foobar.txt', {
+      headers: {'Range': 'bytes=-2'}
+    })
+    return planktos.fetch(req, {root: v1Base})
+    .then(response => {
+      assert.equal(response.status, 200)
+      assert.equal(response.statusText, 'OK')
+      assert.equal(response.headers.get('Content-Range'), undefined)
+      assert.equal(response.headers.get('Content-Length'), '7')
+      assert.equal(response.headers.get('Accept-Ranges'), 'bytes')
+      return response.blob()
+    })
+    .then(blob => blobToText(blob))
+    .then(text => {
+      assert.equal(text, 'foobar\n')
+    })
+  })
+
+  it('planktos.fetch() range header with malformed header', function () {
+    var req = new Request(v1Base + 'foobar.txt', {
+      headers: {'Range': 'zzz=1-2'}
+    })
+    return planktos.fetch(req, {root: v1Base})
+    .then(response => {
+      assert.equal(response.status, 200)
+      assert.equal(response.statusText, 'OK')
+      assert.equal(response.headers.get('Content-Range'), undefined)
+      assert.equal(response.headers.get('Content-Length'), '7')
+      assert.equal(response.headers.get('Accept-Ranges'), 'bytes')
+      return response.blob()
+    })
+    .then(blob => blobToText(blob))
+    .then(text => {
+      assert.equal(text, 'foobar\n')
+    })
   })
 
   it('getFile() - file does not exist', function () {
@@ -290,5 +533,35 @@ function blobToText (blob) {
     function onerror () {
       reject(fr.error)
     }
+  })
+}
+
+function webStreamToString (stream) {
+  return new Promise(function (resolve, reject) {
+    let reader = stream.getReader()
+    let buffer = ''
+    reader.read().then(onRead)
+
+    function onRead (result) {
+      if (result.done) return resolve(buffer)
+
+      buffer += result.value.toString()
+      reader.read().then(onRead)
+    }
+  })
+}
+
+function nodeStreamToString (stream) {
+  return new Promise(function (resolve, reject) {
+    let buffer = ''
+    stream.on('data', chunk => {
+      buffer += chunk.toString()
+    })
+    stream.on('end', (c) => {
+      resolve(buffer)
+    })
+    stream.on('error', (err) => {
+      reject(err)
+    })
   })
 }
