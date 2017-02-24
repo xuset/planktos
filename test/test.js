@@ -7,9 +7,10 @@ const parseTorrent = require('parse-torrent-file')
 const v1Base = '/base/test/www/v1/'
 const v2Base = '/base/test/www/v2/'
 const planktos = new Planktos({ namespace: Math.random() })
+planktos.startSeeder()
 
 describe('lib', function () {
-  this.timeout(20000)
+  this.timeout(8000)
 
   it('getAllSnapshots() - empty', function () {
     return planktos.getAllSnapshots().then(snapshots => assert.deepEqual(snapshots, []))
@@ -18,7 +19,6 @@ describe('lib', function () {
   it('update() to v1', function () {
     return planktos.update(v1Base)
     .then(snapshot => assert('hash' in snapshot))
-    .then(() => planktos.startSeeder())
   })
 
   it('getAllSnapshots()', function () {
@@ -432,10 +432,29 @@ describe('lib', function () {
     .then(file => assert.equal(file, undefined))
   })
 
+  it('remove then re-add', function () {
+    return planktos.getAllSnapshots()
+    .then(snapshots => {
+      assert.equal(snapshots.length, 1)
+      return planktos.removeSnapshot(snapshots[0].hash)
+    })
+    .then(() => planktos.getAllSnapshots())
+    .then(snapshots => assert.equal(snapshots.length, 0))
+    .then(() => planktos.update(v1Base))
+    .then(snapshot => assert('hash' in snapshot))
+    .then(() => planktos.getAllSnapshots())
+    .then(snapshots => {
+      assert.equal(snapshots.length, 1)
+      return snapshots[0].fetch(new Request('foobar.txt'))
+    })
+    .then(response => response.blob())
+    .then(blob => blobToText(blob))
+    .then(text => assert.equal(text, 'foobar\n'))
+  })
+
   it('update() to v2', function () {
     return planktos.update(v2Base)
     .then(snapshot => assert('hash' in snapshot))
-    .then(() => planktos.startSeeder())
   })
 
   it('v2 - getAllSnapshots()', function () {
@@ -474,7 +493,7 @@ describe('lib', function () {
 })
 
 describe('service worker', function () {
-  this.timeout(20000)
+  this.timeout(8000)
 
   let iframe = null
 

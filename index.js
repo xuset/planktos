@@ -109,8 +109,24 @@ Planktos.prototype._add = function (manifest, torrentMetaBuffer, rootUrl) {
       self._snapshots.push(snapshot)
       if (self._seeder) self._seeder.add(snapshot)
 
-      if (alreadyExists) return snapshot
-      else return transaction.add(rawSnapshot).then(() => snapshot)
+      return alreadyExists ? snapshot : transaction.add(rawSnapshot).then(() => snapshot)
+    })
+  })
+}
+
+Planktos.prototype.removeSnapshot = function (hash) {
+  let self = this
+  return self.getAllSnapshots().then(() => { // Ensure self._snapshots is initialized
+    let index = self._snapshots.findIndex(s => s.hash === hash)
+    if (index !== -1) {
+      self._snapshots[index].destroy()
+      self._snapshots.splice(index, 1) // Delete snapshot at `index`
+      if (self._seeder) self._seeder.remove(hash)
+    }
+    let transaction = self._snapshotStore.transaction()
+    return transaction.json().then(rawSnapshots => {
+      let key = Object.keys(rawSnapshots).find(k => rawSnapshots[k].hash === hash)
+      if (key != null) return transaction.remove(key)
     })
   })
 }
