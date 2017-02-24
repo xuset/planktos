@@ -38,7 +38,7 @@ Planktos.prototype.fetch = function (req, opts) {
 
 Planktos.prototype.getSnapshot = function () {
   return this.getAllSnapshots().then(snapshots => {
-    let latest = snapshots['latest']
+    let latest = snapshots[snapshots.length - 1]
     if (latest == null) throw new Error('No local snapshot. Call planktos.update()')
     return latest
   })
@@ -49,18 +49,13 @@ Planktos.prototype.getAllSnapshots = function () {
   if (self._snapshots) return Promise.resolve(self._snapshots)
   if (self._snapshotPromise) return self._snapshotPromise
 
-  self._snapshotPromise = self._snapshotStore.json()
+  self._snapshotPromise = self._snapshotStore.values()
   .then(rawSnapshots => {
     self._snapshotPromise = null
-    self._snapshots = {}
+    self._snapshots = []
 
-    for (let key in rawSnapshots) {
-      if (key === 'latest') continue
-      self._snapshots[key] = new Snapshot(rawSnapshots[key], self._namespace)
-    }
-
-    if (rawSnapshots['latest']) {
-      self._snapshots['latest'] = self._snapshots[rawSnapshots['latest'].hash]
+    for (let i = 0; i < rawSnapshots.length; i++) {
+      self._snapshots.push(new Snapshot(rawSnapshots[i], self._namespace))
     }
 
     return self._snapshots
@@ -80,31 +75,43 @@ Planktos.prototype.update = function (rootUrl) {
   return Promise.all([
     global.fetch(manifestUrl).then(response => response.json()),
     global.fetch(torrentMetaUrl).then(response => response.arrayBuffer()),
-    self.getAllSnapshots(),
     global.caches.open('planktos-' + self._namespace).then(cache => cache.addAll(cacheUrls))
   ])
   .then(results => {
-    let [manifest, torrentMetaBuffer, snapshots] = results
-    let hash = parseTorrent(new Buffer(torrentMetaBuffer)).infoHash
+    let [manifest, torrentMetaBuffer] = results
+    return self._add(manifest, torrentMetaBuffer, rootUrl)
+  })
+}
 
-    if (hash in snapshots) return snapshots[hash]
+Planktos.prototype._add = function (manifest, torrentMetaBuffer, rootUrl) {
+  let self = this
+  return self.getAllSnapshots().then(() => { // Ensure self._snapshots is initialized
+    let transaction = self._snapshotStore.transaction()
+    return transaction.values()
+    .then(rawSnapshots => {
+      let hash = parseTorrent(new Buffer(torrentMetaBuffer)).infoHash
+      let snapshot = self._snapshots.find(s => s.hash === hash)
+      if (snapshot) return snapshot
 
-    let rawSnapshot = {
-      manifest: manifest,
-      torrentMetaBuffer: torrentMetaBuffer,
-      rootUrl: rootUrl.toString(),
-      hash: hash
-    }
+      let rawSnapshot = rawSnapshots.find(s => s.hash === hash)
+      let alreadyExists = rawSnapshot != null
 
-    let snapshot = new Snapshot(rawSnapshot, self._namespace)
-    self._snapshots[snapshot.hash] = snapshot
-    self._snapshots['latest'] = snapshot
-    if (self._seeder) self._seeder.add(snapshot)
+      if (!alreadyExists) {
+        rawSnapshot = {
+          manifest: manifest,
+          torrentMetaBuffer: torrentMetaBuffer,
+          rootUrl: rootUrl.toString(),
+          hash: hash
+        }
+      }
 
-    return Promise.all([
-      self._snapshotStore.set('latest', rawSnapshot),
-      self._snapshotStore.set(hash, rawSnapshot)
-    ]).then(() => snapshot)
+      snapshot = new Snapshot(rawSnapshot, self._namespace)
+      self._snapshots.push(snapshot)
+      if (self._seeder) self._seeder.add(snapshot)
+
+      if (alreadyExists) return snapshot
+      else return transaction.add(rawSnapshot).then(() => snapshot)
+    })
   })
 }
 
@@ -117,14 +124,12 @@ Planktos.prototype.startSeeder = function () {
   tabElect.on('elected', self._seeder.start.bind(self._seeder))
   tabElect.on('deposed', self._seeder.stop.bind(self._seeder))
 
-  self._snapshotStore.on('set', function (change) {
-    if (change.key !== 'latest') self._seeder.add(new Snapshot(change.value, self._namespace))
+  self._snapshotStore.on('add', function (change) {
+    self._seeder.add(new Snapshot(change.value, self._namespace))
   })
 
-  self._snapshotStore.json().then(json => {
-    Object.keys(json)
-    .filter(hash => hash !== 'latest')
-    .forEach(hash => self._seeder.add(new Snapshot(json[hash], self._namespace)))
+  self._snapshotStore.values().then(rawSnapshots => {
+    rawSnapshots.forEach(s => self._seeder.add(new Snapshot(s, self._namespace)))
   })
 
   return self._seeder

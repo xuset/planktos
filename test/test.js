@@ -12,19 +12,19 @@ describe('lib', function () {
   this.timeout(20000)
 
   it('getAllSnapshots() - empty', function () {
-    return planktos.getAllSnapshots().then(snapshots => assert.deepEqual(snapshots, {}))
+    return planktos.getAllSnapshots().then(snapshots => assert.deepEqual(snapshots, []))
   })
 
   it('update() to v1', function () {
     return planktos.update(v1Base)
+    .then(snapshot => assert('hash' in snapshot))
     .then(() => planktos.startSeeder())
   })
 
   it('getAllSnapshots()', function () {
     return planktos.getAllSnapshots()
     .then(snapshots => {
-      assert.deepEqual(Object.keys(snapshots).length, 2)
-      assert('latest' in snapshots)
+      assert.deepEqual(snapshots.length, 1)
     })
   })
 
@@ -434,14 +434,15 @@ describe('lib', function () {
 
   it('update() to v2', function () {
     return planktos.update(v2Base)
+    .then(snapshot => assert('hash' in snapshot))
     .then(() => planktos.startSeeder())
   })
 
   it('v2 - getAllSnapshots()', function () {
     return planktos.getAllSnapshots()
     .then(snapshots => {
-      assert.equal(Object.keys(snapshots).length, 3)
-      let snapshot = snapshots['latest']
+      assert.equal(snapshots.length, 2)
+      let snapshot = snapshots[1]
       let parsed = parseTorrent(snapshot.torrentMetaBuffer)
       assert.equal(parsed.infoHash, snapshot.torrentMeta.infoHash)
       assert.equal(snapshot.hash, snapshot.torrentMeta.infoHash)
