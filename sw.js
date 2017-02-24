@@ -1,11 +1,12 @@
 /* eslint-env browser, serviceworker */
-/* global planktos */
+/* global Planktos */
 
 importScripts('planktos/planktos.min.js')
-// or require('planktos')
+// or const Planktos = require('planktos')
 
 // The location of the planktos root directory
 const root = location.pathname.substring(0, location.pathname.lastIndexOf('/'))
+const planktos = new Planktos()
 
 addEventListener('install', function (event) {
   event.waitUntil(planktos.update(root))
