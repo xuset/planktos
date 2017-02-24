@@ -17,10 +17,12 @@ const preCached = [
   '/planktos/install.js'
 ]
 
-function Planktos () {
+function Planktos (opts) {
+  opts = opts || {}
+  this._namespace = opts.namespace != null ? opts.namespace : ''
   this._latestSnapshot = null
   this._snapshotPromise = null
-  this._snapshotStore = new IdbKvStore('planktos-snapshots')
+  this._snapshotStore = new IdbKvStore('planktos-snapshots-' + this._namespace)
   this._seeder = null
 }
 
@@ -43,7 +45,7 @@ Planktos.prototype.getSnapshot = function () {
   .then(latest => {
     self._snapshotPromise = null
     if (latest == null) throw new Error('No local snapshot. Call planktos.update()')
-    self._latestSnapshot = new Snapshot(latest)
+    self._latestSnapshot = new Snapshot(latest, self._namespace)
     if (self._seeder) self._seeder.add(self._latestSnapshot)
     return self._latestSnapshot
   })
@@ -63,7 +65,7 @@ Planktos.prototype.update = function (rootUrl) {
     global.fetch(manifestUrl).then(response => response.json()),
     global.fetch(torrentMetaUrl).then(response => response.arrayBuffer()),
     self._snapshotStore.get('latest'),
-    global.caches.open('planktos').then(cache => cache.addAll(cacheUrls))
+    global.caches.open('planktos-' + self._namespace).then(cache => cache.addAll(cacheUrls))
   ])
   .then(results => {
     let [manifest, torrentMetaBuffer, latestObj] = results
@@ -101,13 +103,13 @@ Planktos.prototype.startSeeder = function () {
   tabElect.on('deposed', self._seeder.stop.bind(self._seeder))
 
   self._snapshotStore.on('set', function (change) {
-    if (change.key !== 'latest') self._seeder.add(new Snapshot(change.value))
+    if (change.key !== 'latest') self._seeder.add(new Snapshot(change.value, self._namespace))
   })
 
   self._snapshotStore.json().then(json => {
     Object.keys(json)
     .filter(hash => hash !== 'latest')
-    .forEach(hash => self._seeder.add(new Snapshot(json[hash])))
+    .forEach(hash => self._seeder.add(new Snapshot(json[hash], self._namespace)))
   })
 
   return self._seeder

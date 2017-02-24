@@ -6,7 +6,7 @@ const parseTorrent = require('parse-torrent-file')
 
 const v1Base = '/base/test/www/v1/'
 const v2Base = '/base/test/www/v2/'
-const planktos = new Planktos()
+const planktos = new Planktos({ namespace: Math.random() })
 
 describe('lib', function () {
   this.timeout(20000)
