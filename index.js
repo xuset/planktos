@@ -27,20 +27,18 @@ function Planktos (opts) {
 }
 
 Planktos.prototype.getFile = function (fpath) {
-  return this.getSnapshot()
-  .then(snapshot => snapshot.getFile(fpath))
+  return this.getAllSnapshots()
+  .then(snapshots => {
+    if (snapshots.length === 0) throw new Error('No local snapshot. Call planktos.update()')
+    return snapshots[snapshots.length - 1].getFile(fpath)
+  })
 }
 
 Planktos.prototype.fetch = function (req, opts) {
-  return this.getSnapshot()
-  .then(snapshot => snapshot.fetch(req, opts))
-}
-
-Planktos.prototype.getSnapshot = function () {
-  return this.getAllSnapshots().then(snapshots => {
-    let latest = snapshots[snapshots.length - 1]
-    if (latest == null) throw new Error('No local snapshot. Call planktos.update()')
-    return latest
+  return this.getAllSnapshots()
+  .then(snapshots => {
+    if (snapshots.length === 0) throw new Error('No local snapshot. Call planktos.update()')
+    return snapshots[snapshots.length - 1].fetch(req, opts)
   })
 }
 

@@ -24,13 +24,8 @@ describe('lib', function () {
   it('getAllSnapshots()', function () {
     return planktos.getAllSnapshots()
     .then(snapshots => {
-      assert.deepEqual(snapshots.length, 1)
-    })
-  })
-
-  it('getSnapshot()', function () {
-    return planktos.getSnapshot()
-    .then(snapshot => {
+      assert.equal(snapshots.length, 1)
+      let snapshot = snapshots[0]
       let parsed = parseTorrent(snapshot.torrentMetaBuffer)
       assert.equal(parsed.infoHash, snapshot.torrentMeta.infoHash)
       assert.equal(snapshot.hash, snapshot.torrentMeta.infoHash)
