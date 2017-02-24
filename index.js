@@ -20,7 +20,7 @@ const preCached = [
 function Planktos (opts) {
   opts = opts || {}
   this._namespace = opts.namespace != null ? opts.namespace : ''
-  this._latestSnapshot = null
+  this._snapshots = null
   this._snapshotPromise = null
   this._snapshotStore = new IdbKvStore('planktos-snapshots-' + this._namespace)
   this._seeder = null
@@ -37,17 +37,33 @@ Planktos.prototype.fetch = function (req, opts) {
 }
 
 Planktos.prototype.getSnapshot = function () {
+  return this.getAllSnapshots().then(snapshots => {
+    let latest = snapshots['latest']
+    if (latest == null) throw new Error('No local snapshot. Call planktos.update()')
+    return latest
+  })
+}
+
+Planktos.prototype.getAllSnapshots = function () {
   let self = this
-  if (self._latestSnapshot) return Promise.resolve(self._latestSnapshot)
+  if (self._snapshots) return Promise.resolve(self._snapshots)
   if (self._snapshotPromise) return self._snapshotPromise
 
-  self._snapshotPromise = self._snapshotStore.get('latest')
-  .then(latest => {
+  self._snapshotPromise = self._snapshotStore.json()
+  .then(rawSnapshots => {
     self._snapshotPromise = null
-    if (latest == null) throw new Error('No local snapshot. Call planktos.update()')
-    self._latestSnapshot = new Snapshot(latest, self._namespace)
-    if (self._seeder) self._seeder.add(self._latestSnapshot)
-    return self._latestSnapshot
+    self._snapshots = {}
+
+    for (let key in rawSnapshots) {
+      if (key === 'latest') continue
+      self._snapshots[key] = new Snapshot(rawSnapshots[key], self._namespace)
+    }
+
+    if (rawSnapshots['latest']) {
+      self._snapshots['latest'] = self._snapshots[rawSnapshots['latest'].hash]
+    }
+
+    return self._snapshots
   })
 
   return self._snapshotPromise
@@ -64,32 +80,31 @@ Planktos.prototype.update = function (rootUrl) {
   return Promise.all([
     global.fetch(manifestUrl).then(response => response.json()),
     global.fetch(torrentMetaUrl).then(response => response.arrayBuffer()),
-    self._snapshotStore.get('latest'),
+    self.getAllSnapshots(),
     global.caches.open('planktos-' + self._namespace).then(cache => cache.addAll(cacheUrls))
   ])
   .then(results => {
-    let [manifest, torrentMetaBuffer, latestObj] = results
+    let [manifest, torrentMetaBuffer, snapshots] = results
     let hash = parseTorrent(new Buffer(torrentMetaBuffer)).infoHash
 
-    if (latestObj != null && latestObj.hash === hash) return
+    if (hash in snapshots) return snapshots[hash]
 
-    let snapshotObj = {
+    let rawSnapshot = {
       manifest: manifest,
       torrentMetaBuffer: torrentMetaBuffer,
       rootUrl: rootUrl.toString(),
       hash: hash
     }
 
+    let snapshot = new Snapshot(rawSnapshot, self._namespace)
+    self._snapshots[snapshot.hash] = snapshot
+    self._snapshots['latest'] = snapshot
+    if (self._seeder) self._seeder.add(snapshot)
+
     return Promise.all([
-      self._snapshotStore.set('latest', snapshotObj),
-      self._snapshotStore.set(hash, snapshotObj)
-    ])
-  })
-  .then(() => {
-    if (self._latestSnapshot) self._latestSnapshot.close()
-    self._latestSnapshot = null
-    self._snapshotPromise = null
-    return self.getSnapshot()
+      self._snapshotStore.set('latest', rawSnapshot),
+      self._snapshotStore.set(hash, rawSnapshot)
+    ]).then(() => snapshot)
   })
 }
 

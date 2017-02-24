@@ -11,9 +11,21 @@ const planktos = new Planktos({ namespace: Math.random() })
 describe('lib', function () {
   this.timeout(20000)
 
-  before(function () {
+  it('getAllSnapshots() - empty', function () {
+    return planktos.getAllSnapshots().then(snapshots => assert.deepEqual(snapshots, {}))
+  })
+
+  it('update() to v1', function () {
     return planktos.update(v1Base)
     .then(() => planktos.startSeeder())
+  })
+
+  it('getAllSnapshots()', function () {
+    return planktos.getAllSnapshots()
+    .then(snapshots => {
+      assert.deepEqual(Object.keys(snapshots).length, 2)
+      assert('latest' in snapshots)
+    })
   })
 
   it('getSnapshot()', function () {
@@ -425,9 +437,11 @@ describe('lib', function () {
     .then(() => planktos.startSeeder())
   })
 
-  it('v2 - getSnapshot()', function () {
-    return planktos.getSnapshot()
-    .then(snapshot => {
+  it('v2 - getAllSnapshots()', function () {
+    return planktos.getAllSnapshots()
+    .then(snapshots => {
+      assert.equal(Object.keys(snapshots).length, 3)
+      let snapshot = snapshots['latest']
       let parsed = parseTorrent(snapshot.torrentMetaBuffer)
       assert.equal(parsed.infoHash, snapshot.torrentMeta.infoHash)
       assert.equal(snapshot.hash, snapshot.torrentMeta.infoHash)
