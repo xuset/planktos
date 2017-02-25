@@ -183,6 +183,19 @@ describe('lib', function () {
     .then(text => assert.equal(text, 'foobar\n'))
   })
 
+  it('planktos.fetch() with relative string url', function () {
+    return planktos.fetch('foobar.txt')
+    .then(response => {
+      assert.equal(response.status, 200)
+      assert.equal(response.statusText, 'OK')
+      assert.equal(response.headers.get('Content-Length'), '7')
+      assert.equal(response.headers.get('Accept-Ranges'), 'bytes')
+      return response.blob()
+    })
+    .then(blob => blobToText(blob))
+    .then(text => assert.equal(text, 'foobar\n'))
+  })
+
   it('planktos.fetch() implied index html', function () {
     return planktos.fetch(location.origin + v1Base + 'foo', {root: v1Base})
     .then(response => {
