@@ -78,7 +78,7 @@ Blocking Issues:
 
 ## Documentation
 
-[Read the docs here](docs/Home.md)
+[Read the docs here](https://github.com/xuset/planktos/wiki)
 
 ## Contribute
 
