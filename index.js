@@ -84,30 +84,32 @@ Planktos.prototype.update = function (rootUrl) {
 Planktos.prototype._add = function (manifest, torrentMetaBuffer, rootUrl) {
   let self = this
   return self.getAllSnapshots().then(() => { // Ensure self._snapshots is initialized
-    let transaction = self._snapshotStore.transaction()
-    return transaction.values()
-    .then(rawSnapshots => {
-      let hash = parseTorrent(new Buffer(torrentMetaBuffer)).infoHash
-      let snapshot = self._snapshots.find(s => s.hash === hash)
-      if (snapshot) return snapshot
+    return new Promise(function (resolve, reject) {
+      let transaction = self._snapshotStore.transaction()
+      transaction.values(function (err, rawSnapshots) {
+        if (err) return reject(err)
+        let hash = parseTorrent(new Buffer(torrentMetaBuffer)).infoHash
+        let snapshot = self._snapshots.find(s => s.hash === hash)
+        if (snapshot) return snapshot
 
-      let rawSnapshot = rawSnapshots.find(s => s.hash === hash)
-      let alreadyExists = rawSnapshot != null
+        let rawSnapshot = rawSnapshots.find(s => s.hash === hash)
+        let alreadyExists = rawSnapshot != null
 
-      if (!alreadyExists) {
-        rawSnapshot = {
-          manifest: manifest,
-          torrentMetaBuffer: torrentMetaBuffer,
-          rootUrl: rootUrl.toString(),
-          hash: hash
+        if (!alreadyExists) {
+          rawSnapshot = {
+            manifest: manifest,
+            torrentMetaBuffer: torrentMetaBuffer,
+            rootUrl: rootUrl.toString(),
+            hash: hash
+          }
         }
-      }
 
-      snapshot = new Snapshot(rawSnapshot, self._namespace)
-      self._snapshots.push(snapshot)
-      if (self._seeder) self._seeder.add(snapshot)
+        snapshot = new Snapshot(rawSnapshot, self._namespace)
+        self._snapshots.push(snapshot)
+        if (self._seeder) self._seeder.add(snapshot)
 
-      return alreadyExists ? snapshot : transaction.add(rawSnapshot).then(() => snapshot)
+        resolve(alreadyExists ? snapshot : transaction.add(rawSnapshot).then(() => snapshot))
+      })
     })
   })
 }
@@ -121,10 +123,13 @@ Planktos.prototype.removeSnapshot = function (hash) {
       self._snapshots.splice(index, 1) // Delete snapshot at `index`
       if (self._seeder) self._seeder.remove(hash)
     }
-    let transaction = self._snapshotStore.transaction()
-    return transaction.json().then(rawSnapshots => {
-      let key = Object.keys(rawSnapshots).find(k => rawSnapshots[k].hash === hash)
-      if (key != null) return transaction.remove(key)
+    return new Promise(function (resolve, reject) {
+      let transaction = self._snapshotStore.transaction()
+      transaction.json(function (err, rawSnapshots) {
+        if (err) return reject(err)
+        let key = Object.keys(rawSnapshots).find(k => rawSnapshots[k].hash === hash)
+        resolve(key == null ? undefined : transaction.remove(key))
+      })
     })
   })
 }
