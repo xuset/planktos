@@ -9,7 +9,7 @@ rm build/* || true
 
 # Build lib
 
-browserify index.js --debug -s planktos \
+browserify index.js --debug -s Planktos \
  | exorcist build/planktos.js.map \
  > build/planktos.js
 

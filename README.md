@@ -76,6 +76,10 @@ Blocking Issues:
  * No streaming support. The requested file must be downloaded in it's entirety before it can be displayed to the user. Currently, only chrome supports streaming from service workers while Firefox has an [open issue](https://bugzilla.mozilla.org/show_bug.cgi?id=1128959) for it.
  * Sharding into multiple torrents is not currently supported, so Planktos will be infeasible for large websites
 
+## Documentation
+
+[Read the docs here](https://github.com/xuset/planktos/wiki)
+
 ## Contribute
 
 Contributions are always welcome!

@@ -1,13 +1,9 @@
+module.exports = Planktos
+
 const global = typeof window !== 'undefined' ? window : self // eslint-disable-line
 
 // Temp bug fix: https://github.com/srijs/rusha/issues/39
 if (global.WorkerGlobalScope) delete global.FileReaderSync
-
-module.exports.update = update
-module.exports.getSnapshot = getSnapshot
-module.exports.getFile = getFile
-module.exports.fetch = fetch
-module.exports.startSeeder = startSeeder
 
 const IdbKvStore = require('idb-kv-store')
 const path = require('path')
@@ -16,43 +12,58 @@ const TabElect = require('tab-elect')
 const Snapshot = require('./lib/snapshot')
 const Seeder = require('./lib/seeder')
 
-let latestSnapshot = null
-let snapshotPromise = null
-let snapshotStore = new IdbKvStore('planktos-snapshots')
-let seeder = null
-
 const preCached = [
   '/planktos/planktos.min.js',
   '/planktos/install.js'
 ]
 
-function getFile (fpath) {
-  return getSnapshot()
-  .then(snapshot => snapshot.getFile(fpath))
+function Planktos (opts) {
+  opts = opts || {}
+  this._namespace = opts.namespace != null ? opts.namespace : ''
+  this._snapshots = null
+  this._snapshotPromise = null
+  this._snapshotStore = new IdbKvStore('planktos-snapshots-' + this._namespace)
+  this._seeder = null
 }
 
-function fetch (req, opts) {
-  return getSnapshot()
-  .then(snapshot => snapshot.fetch(req, opts))
+Planktos.prototype.getFile = function (fpath) {
+  return this.getAllSnapshots()
+  .then(snapshots => {
+    if (snapshots.length === 0) throw new Error('No local snapshot. Call planktos.update()')
+    return snapshots[snapshots.length - 1].getFile(fpath)
+  })
 }
 
-function getSnapshot () {
-  if (latestSnapshot) return Promise.resolve(latestSnapshot)
-  if (snapshotPromise) return snapshotPromise
+Planktos.prototype.fetch = function (req, opts) {
+  return this.getAllSnapshots()
+  .then(snapshots => {
+    if (snapshots.length === 0) throw new Error('No local snapshot. Call planktos.update()')
+    return snapshots[snapshots.length - 1].fetch(req, opts)
+  })
+}
 
-  snapshotPromise = snapshotStore.get('latest')
-  .then(latest => {
-    snapshotPromise = null
-    if (latest == null) throw new Error('No local snapshot. Call planktos.update()')
-    latestSnapshot = new Snapshot(latest)
-    if (seeder) seeder.add(latestSnapshot)
-    return latestSnapshot
+Planktos.prototype.getAllSnapshots = function () {
+  let self = this
+  if (self._snapshots) return Promise.resolve(self._snapshots)
+  if (self._snapshotPromise) return self._snapshotPromise
+
+  self._snapshotPromise = self._snapshotStore.values()
+  .then(rawSnapshots => {
+    self._snapshotPromise = null
+    self._snapshots = []
+
+    for (let i = 0; i < rawSnapshots.length; i++) {
+      self._snapshots.push(new Snapshot(rawSnapshots[i], self._namespace))
+    }
+
+    return self._snapshots
   })
 
-  return snapshotPromise
+  return self._snapshotPromise
 }
 
-function update (rootUrl) {
+Planktos.prototype.update = function (rootUrl) {
+  let self = this
   if (!(rootUrl instanceof URL)) rootUrl = new URL(rootUrl, global.location.origin)
 
   let torrentMetaUrl = new URL(path.join(rootUrl.pathname, 'planktos/root.torrent'), rootUrl)
@@ -62,52 +73,83 @@ function update (rootUrl) {
   return Promise.all([
     global.fetch(manifestUrl).then(response => response.json()),
     global.fetch(torrentMetaUrl).then(response => response.arrayBuffer()),
-    snapshotStore.get('latest'),
-    global.caches.open('planktos').then(cache => cache.addAll(cacheUrls))
+    global.caches.open('planktos-' + self._namespace).then(cache => cache.addAll(cacheUrls))
   ])
   .then(results => {
-    let [manifest, torrentMetaBuffer, latestObj] = results
-    let hash = parseTorrent(new Buffer(torrentMetaBuffer)).infoHash
-
-    if (latestObj != null && latestObj.hash === hash) return
-
-    let snapshotObj = {
-      manifest: manifest,
-      torrentMetaBuffer: torrentMetaBuffer,
-      rootUrl: rootUrl.toString(),
-      hash: hash
-    }
-
-    return Promise.all([
-      snapshotStore.set('latest', snapshotObj),
-      snapshotStore.set(hash, snapshotObj)
-    ])
-  })
-  .then(() => {
-    if (latestSnapshot) latestSnapshot.close()
-    latestSnapshot = null
-    snapshotPromise = null
-    return getSnapshot()
+    let [manifest, torrentMetaBuffer] = results
+    return self._add(manifest, torrentMetaBuffer, rootUrl)
   })
 }
 
-function startSeeder () {
-  if (seeder) return seeder
-  seeder = new Seeder()
+Planktos.prototype._add = function (manifest, torrentMetaBuffer, rootUrl) {
+  let self = this
+  return self.getAllSnapshots().then(() => { // Ensure self._snapshots is initialized
+    return new Promise(function (resolve, reject) {
+      let transaction = self._snapshotStore.transaction()
+      transaction.values(function (err, rawSnapshots) {
+        if (err) return reject(err)
+        let hash = parseTorrent(new Buffer(torrentMetaBuffer)).infoHash
+        let snapshot = self._snapshots.find(s => s.hash === hash)
+        if (snapshot) return snapshot
+
+        let rawSnapshot = rawSnapshots.find(s => s.hash === hash)
+        let alreadyExists = rawSnapshot != null
+
+        if (!alreadyExists) {
+          rawSnapshot = {
+            manifest: manifest,
+            torrentMetaBuffer: torrentMetaBuffer,
+            rootUrl: rootUrl.toString(),
+            hash: hash
+          }
+        }
+
+        snapshot = new Snapshot(rawSnapshot, self._namespace)
+        self._snapshots.push(snapshot)
+        if (self._seeder) self._seeder.add(snapshot)
+
+        resolve(alreadyExists ? snapshot : transaction.add(rawSnapshot).then(() => snapshot))
+      })
+    })
+  })
+}
+
+Planktos.prototype.removeSnapshot = function (hash) {
+  let self = this
+  return self.getAllSnapshots().then(() => { // Ensure self._snapshots is initialized
+    let index = self._snapshots.findIndex(s => s.hash === hash)
+    if (index !== -1) {
+      self._snapshots[index].destroy()
+      self._snapshots.splice(index, 1) // Delete snapshot at `index`
+      if (self._seeder) self._seeder.remove(hash)
+    }
+    return new Promise(function (resolve, reject) {
+      let transaction = self._snapshotStore.transaction()
+      transaction.json(function (err, rawSnapshots) {
+        if (err) return reject(err)
+        let key = Object.keys(rawSnapshots).find(k => rawSnapshots[k].hash === hash)
+        resolve(key == null ? undefined : transaction.remove(key))
+      })
+    })
+  })
+}
+
+Planktos.prototype.startSeeder = function () {
+  let self = this
+  if (self._seeder) return self._seeder
+  self._seeder = new Seeder()
 
   let tabElect = new TabElect('planktos')
-  tabElect.on('elected', seeder.start.bind(seeder))
-  tabElect.on('deposed', seeder.stop.bind(seeder))
+  tabElect.on('elected', self._seeder.start.bind(self._seeder))
+  tabElect.on('deposed', self._seeder.stop.bind(self._seeder))
 
-  snapshotStore.on('set', function (change) {
-    if (change.key !== 'latest') seeder.add(new Snapshot(change.value))
+  self._snapshotStore.on('add', function (change) {
+    self._seeder.add(new Snapshot(change.value, self._namespace))
   })
 
-  snapshotStore.json().then(json => {
-    Object.keys(json)
-    .filter(hash => hash !== 'latest')
-    .forEach(hash => seeder.add(new Snapshot(json[hash])))
+  self._snapshotStore.values().then(rawSnapshots => {
+    rawSnapshots.forEach(s => self._seeder.add(new Snapshot(s, self._namespace)))
   })
 
-  return seeder
+  return self._seeder
 }
