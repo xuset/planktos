@@ -71,6 +71,9 @@
                         <a class="page-scroll" href="#about">About</a>
                     </li>
                     <li>
+                        <a class="page-scroll" href="#benifits">Benifits</a>
+                    </li>
+                    <li>
                         <a class="page-scroll" href="#download">Install</a>
                     </li>
                     <li>
@@ -107,7 +110,20 @@
     <!-- About Section -->
     <section id="about" class="container content-section" style="padding-top: 50px">
         <h2 class="text-center">What is Planktos?</h2>
-        <p class="text-center">Planktos enables websites to serve their static content over BitTorrent by turning users into seeders. This allows website owners to significantly reduce hosting costs for static content, scale in real-time without provisioning more web servers, and prevent user impact during an outage.<p>
+        <p class="text-center">Planktos enables websites to serve their static content over BitTorrent by turning users into seeders. This allows website owners to significantly reduce hosting costs for static content, scale in real-time without provisioning more web servers, and prevent user impact during an outage.</p>
+        <div class="center-block" style="width:75%">
+            <h3 class="text-center">How it works</h4>
+            <ol style="font-size: 22px">
+                <li>Planktos generates a torrent of the static assets</li>
+                <li>Http requests are caught by the Planktos service worker</li>
+                <li>Requested files are downloaded from other users over BitTorrent</li>
+            </ol>
+        </div>
+    </section>
+
+    <!-- Benifits section -->
+    <section id="benifits" class="container content-section" style="padding-top: 50px">
+        <h2 class="text-center">Benifits of using Planktos</h2>
 
         <div class="row">
             <div class="col-md-5 col-md-offset-1 text-center" style="padding-bottom: 45px">
