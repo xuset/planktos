@@ -60,9 +60,9 @@ Requirements for Planktos Websites:
 
 ## How it Works
 
-The Planktos CLI copies the website's static assets to `/planktos/files/[file_hash]` and packages those files into a torrent at `/planktos/root.torrent`. The CLI then generates a manifest that maps file paths to their hashes. Finally, the CLI copies the Planktos library files, including the service worker.
+The Planktos CLI creates a snapshot of the website's static files and bundles everything into a torrent so users can download and seed the website.
 
-When the webpage is loaded for the first time, Planktos installs a service worker that intercepts all HTTP requests made by the webpage. When the service worker intercepts a request, Planktos checks to see if the requested file is present in the torrent. If the file is in the torrent, it is downloaded from peers, otherwise, it is downloaded over HTTP as it normally would be.
+When the webpage is loaded for the first time, Planktos registers a service worker that intercepts all HTTP requests made by the webpage. When the service worker intercepts a request, Planktos checks to see if the requested file is present in the torrent. If the file is in the torrent, it is downloaded from peers, otherwise, it is downloaded over HTTP as it normally would be. All torrent files are stored in the persistent IndexedDB storage so a given file only has to be downloaded once regardless of how many times it is requested. Invalidating the users cache just requires creating a new torrent with the updated files.
 
 Due to the fact that service workers cannot use the [WebRTC](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API) API, the actual downloading of torrents is delegated to a Planktos controlled webpage. Planktos accomplishes this by injecting a downloader script into the webpage when the fetch request is intercepted. See the [W3C issue](https://github.com/w3c/webrtc-pc/issues/230) for more info on WebRTC in service workers.
 
