@@ -97,7 +97,7 @@
                     <div class="col-md-8 col-md-offset-2">
                         <img src="planktos-logo.png" alt="" style="width: 20%">
                         <h1 class="brand-heading">Planktos</h1>
-                        <p class="intro-text">Serving websites over BitTorrent</p>
+                        <p class="intro-text">Serving Websites Peer-to-Peer in the Browser</p>
                         <a href="#about" class="btn btn-circle page-scroll">
                             <i class="fa fa-angle-double-down animated"></i>
                         </a>
@@ -111,18 +111,22 @@
     <section id="about" class="container content-section" style="padding-top: 70px">
         <h2 class="text-center">What is Planktos?</h2>
         <p class="text-center">Planktos enables websites to serve their static content over BitTorrent by turning users into seeders. This allows website owners to significantly reduce hosting costs for static content, scale in real-time without provisioning more web servers, and prevent user impact during an outage.</p>
+    </section>
+
+    <!-- How It Works Section -->
+    <section id="about" class="container content-section" style="padding-top: 50px">
         <div class="center-block" style="width:75%">
-            <h3 class="text-center">How it works</h4>
-            <ol style="font-size: 22px">
-                <li>Planktos generates a torrent of the static assets</li>
-                <li>Http requests are caught by the Planktos service worker</li>
-                <li>Requested files are downloaded from other users over BitTorrent</li>
-            </ol>
+            <h3 class="text-center">How it works</h3>
+            <p class="text-center">
+                <b>1.</b> Planktos converts your website's static assets into a torrent<br/>
+                <b>2.</b> HTTP requests are intercepted by the Planktos service worker<br/>
+                <b>3.</b> Requested files are downloaded from other viewing the website via BitTorrent<br/>
+            </p>
         </div>
     </section>
 
     <!-- Benifits section -->
-    <section id="benifits" class="container content-section" style="padding-top: 70px">
+    <section id="benifits" class="container content-section" style="padding-top: 50px">
         <h2 class="text-center">Benifits of using Planktos</h2>
 
         <div class="row">
