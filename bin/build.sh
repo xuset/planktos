@@ -16,7 +16,7 @@ browserify index.js --debug -s Planktos \
 uglifyjs build/planktos.js --mangle --compress warnings=false \
   --in-source-map build/planktos.js.map \
   --source-map build/planktos.min.js.map \
-  --source-map-url planktos.min.js.map \
+  --source-map-url /base/build/planktos.min.js.map \
  > build/planktos.min.js
 
 # Build tests

@@ -9,10 +9,15 @@ module.exports = function (config) {
 
     // list of files / patterns to load in the browser
     files: [
-      './test/www/v1/planktos/planktos.min.js',
+      './build/planktos.min.js',
       './build/test.js',
       {
         pattern: './test/www/**',
+        included: false,
+        nocache: true
+      },
+      {
+        pattern: './build/planktos.min.js.map',
         included: false,
         nocache: true
       }
