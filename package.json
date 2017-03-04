@@ -1,6 +1,6 @@
 {
   "name": "planktos",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Serving websites over bittorrent",
   "main": "index.js",
   "bin": "./bin/setup.js",
