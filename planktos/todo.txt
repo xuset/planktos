@@ -1,0 +1,3 @@
+- Add Planktos to website (look at install.js)
+- Add feedback form to the website and README
+- Follow up with Alvin
