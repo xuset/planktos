@@ -2,10 +2,6 @@
 <html lang="en">
 
 <head>
-    
-    <!-- Include Planktos -->
-    <script src="planktos/install.js" sw="planktos.sw.js"></script>
-
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -287,6 +283,17 @@
 
     <!-- Theme JavaScript -->
     <script src="js/grayscale.js"></script>
+
+    <!-- Include Planktos -->
+    <script src="planktos/planktos.min.js"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js')
+        var planktos = new Planktos()
+        planktos.startSeeder()
+      }
+    </script>
+
 
 </body>
 

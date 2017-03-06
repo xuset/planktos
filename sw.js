@@ -14,15 +14,21 @@ addEventListener('install', function (event) {
 
 addEventListener('fetch', function (event) {
   let url = new URL(event.request.url)
+  let filepath = url.pathname.replace(root, '')
 
   // Early return tells the browser to handle the request instead of the service worker
   if (url.host !== location.host || event.request.method !== 'GET') return
 
   // Let the browser handle webseed requests for performance reasons
-  if (url.pathname.replace(root, '').startsWith('/planktos/files/')) return
+  if (filepath.startsWith('/planktos/files/')) return
 
   // Fallback to http if the file was not found in the torrent or an error occurs
-  let responsePromise = planktos.fetch(event, {root: root})
+  let opts = {root: root}
+  if (filepath === '/index.html' || filepath === '/') opts.inject = false
+
+  console.log('FETCH', filepath, opts)
+
+  let responsePromise = planktos.fetch(event, opts)
     .catch(err => console.log('PLANKTOS-ERROR', err))
     .then(response => response != null ? response : fetch(event.request))
 
