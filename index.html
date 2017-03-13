@@ -2,6 +2,9 @@
 <html lang="en">
 
 <head>
+    <!-- Include Planktos -->
+    <script src="planktos/install.js" sw="planktos.sw.js"></script>
+
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -120,6 +123,18 @@
                 <b>1.</b> Planktos bundles your website's static files into a torrent<br/>
                 <b>2.</b> HTTP requests are intercepted by the Planktos service worker<br/>
                 <b>3.</b> Requested files are downloaded from other online users via BitTorrent<br/>
+            </p>
+        </div>
+    </section>
+
+    <!-- Use Cases Section -->
+    <section class="container content-section" style="padding-top: 50px">
+        <div class="center-block" style="width:75%">
+            <h3 class="text-center">Use Cases</h3>
+            <p class="text-center">
+                <b>Static Websites (aka The Blog Use Case):</b> Small websites with only static files can use Planktos to stay up if their web servers go down, auto-scale in response to increased traffic, and reduce bandwidth costs. Since these websites have all of their files served by Planktos, return users can load website even if it's web servers are unreachable!
+                <br><br>
+                <b>Video Streaming Websites:</b> Large websites with a lot of static video content can use Planktos to reduce the bandwidth to their servers and CDN. Instead of using a lot of server capacity, these websites can utilize their users to serve their video content to other users.
             </p>
         </div>
     </section>
