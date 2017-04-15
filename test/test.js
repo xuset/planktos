@@ -2,12 +2,10 @@
 /* global Planktos */
 
 const assert = require('assert')
-const parseTorrent = require('parse-torrent-file')
 
 const v1Base = '/base/test/www/v1/'
 const v2Base = '/base/test/www/v2/'
 const planktos = new Planktos({ namespace: Math.random() })
-planktos.startSeeder()
 
 describe('lib', function () {
   this.timeout(8000)
@@ -26,21 +24,15 @@ describe('lib', function () {
     .then(snapshots => {
       assert.equal(snapshots.length, 1)
       let snapshot = snapshots[0]
-      let parsed = parseTorrent(snapshot.torrentMetaBuffer)
-      assert.equal(parsed.infoHash, snapshot.torrentMeta.infoHash)
-      assert.equal(snapshot.hash, snapshot.torrentMeta.infoHash)
+      assert.equal(snapshot.closed, false)
+      assert.notEqual(snapshot.hash, null)
       assert.equal(new URL(snapshot.rootUrl).origin, location.origin)
-      assert('index.html' in snapshot.manifest)
-      assert.notEqual(snapshot.torrentMetaBuffer.length, 0)
-      assert(snapshot.torrentMeta.files.find(f => f.name === snapshot.manifest['index.html']))
     })
   })
 
   it('getFile()', function () {
     return planktos.getFile('/foo')
     .then(f => {
-      assert.equal(f.path, 'foo/index.html')
-      assert.equal(f.hash, 'e242ed3bffccdf271b7fbaf34ed72d089537b42f')
       assert.equal(f.length, 4)
       assert(typeof f.offset === 'number')
     })
@@ -48,7 +40,7 @@ describe('lib', function () {
 
   it('getFile() - non normalized url', function () {
     return planktos.getFile('///.//foo////')
-    .then(f => assert.equal(f.path, 'foo/index.html'))
+    .then(f => assert.notEqual(f, undefined))
   })
 
   it('file.getStream()', function () {
@@ -470,21 +462,15 @@ describe('lib', function () {
     .then(snapshots => {
       assert.equal(snapshots.length, 2)
       let snapshot = snapshots[1]
-      let parsed = parseTorrent(snapshot.torrentMetaBuffer)
-      assert.equal(parsed.infoHash, snapshot.torrentMeta.infoHash)
-      assert.equal(snapshot.hash, snapshot.torrentMeta.infoHash)
+      assert.equal(snapshot.closed, false)
+      assert.notEqual(snapshot.hash, null)
       assert.equal(new URL(snapshot.rootUrl).origin, location.origin)
-      assert('foo.txt' in snapshot.manifest)
-      assert.notEqual(snapshot.torrentMetaBuffer.length, 0)
-      assert(snapshot.torrentMeta.files.find(f => f.name === snapshot.manifest['foo.txt']))
     })
   })
 
   it('v2 - getFile()', function () {
     return planktos.getFile('foo.txt')
     .then(f => {
-      assert.equal(f.path, 'foo.txt')
-      assert.equal(f.hash, 'e242ed3bffccdf271b7fbaf34ed72d089537b42f')
       assert.equal(f.length, 4)
       assert(typeof f.offset === 'number')
     })

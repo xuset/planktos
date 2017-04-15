@@ -8,9 +8,8 @@ if (global.WorkerGlobalScope) delete global.FileReaderSync
 const IdbKvStore = require('idb-kv-store')
 const path = require('path')
 const parseTorrent = require('parse-torrent-file')
-const TabElect = require('tab-elect')
 const Snapshot = require('./lib/snapshot')
-const Seeder = require('./lib/seeder')
+const AetherTorrent = require('aether-torrent')
 
 const preCached = [
   '/planktos/planktos.min.js',
@@ -23,7 +22,7 @@ function Planktos (opts) {
   this._snapshots = null
   this._snapshotPromise = null
   this._snapshotStore = new IdbKvStore('planktos-snapshots-' + this._namespace)
-  this._seeder = null
+  this._aethertorrent = new AetherTorrent({ namespace: this._namespace })
 }
 
 Planktos.prototype.getFile = function (fpath) {
@@ -52,12 +51,9 @@ Planktos.prototype.getAllSnapshots = function () {
     self._snapshotPromise = null
     self._snapshots = []
 
-    for (let i = 0; i < rawSnapshots.length; i++) {
-      self._snapshots.push(new Snapshot(rawSnapshots[i], self._namespace))
-    }
-
-    return self._snapshots
+    return Promise.all(rawSnapshots.map(rs => self._add(rs)))
   })
+  .then(() => self._snapshots)
 
   return self._snapshotPromise
 }
@@ -77,18 +73,18 @@ Planktos.prototype.update = function (rootUrl) {
   ])
   .then(results => {
     let [manifest, torrentMetaBuffer] = results
-    return self._add(manifest, torrentMetaBuffer, rootUrl)
+    return self._storeSnapshot(manifest, torrentMetaBuffer, rootUrl)
   })
 }
 
-Planktos.prototype._add = function (manifest, torrentMetaBuffer, rootUrl) {
+Planktos.prototype._storeSnapshot = function (manifest, torrentMetaBuffer, rootUrl) {
   let self = this
   return self.getAllSnapshots().then(() => { // Ensure self._snapshots is initialized
     return new Promise(function (resolve, reject) {
       let transaction = self._snapshotStore.transaction()
       transaction.values(function (err, rawSnapshots) {
         if (err) return reject(err)
-        let hash = parseTorrent(new Buffer(torrentMetaBuffer)).infoHash
+        let hash = parseTorrent(Buffer.from(torrentMetaBuffer)).infoHash
         let snapshot = self._snapshots.find(s => s.hash === hash)
         if (snapshot) return snapshot
 
@@ -104,13 +100,34 @@ Planktos.prototype._add = function (manifest, torrentMetaBuffer, rootUrl) {
           }
         }
 
-        snapshot = new Snapshot(rawSnapshot, self._namespace)
-        self._snapshots.push(snapshot)
-        if (self._seeder) self._seeder.add(snapshot)
-
-        resolve(alreadyExists ? snapshot : transaction.add(rawSnapshot).then(() => snapshot))
+        if (alreadyExists) {
+          resolve(rawSnapshot)
+        } else {
+          transaction.add(rawSnapshot)
+          .then(() => resolve(rawSnapshot))
+          .catch(err => reject(err))
+        }
       })
     })
+  })
+  .then(rawSnapshot => self._add(rawSnapshot))
+}
+
+Planktos.prototype._add = function (rawSnapshot) {
+  var self = this
+  let torrentMeta = parseTorrent(Buffer.from(rawSnapshot.torrentMetaBuffer))
+  let webseed = new URL(rawSnapshot.rootUrl)
+  if (torrentMeta.files.length === 1) {
+    webseed.pathname = path.join(webseed.pathname, 'planktos/files', torrentMeta.files[0].name)
+  }
+  return self._aethertorrent.add(rawSnapshot.torrentMetaBuffer, {webseeds: webseed.toString()})
+  .then(torrent => {
+    let snapshot = self._snapshots.find(s => s.hash === rawSnapshot.hash)
+    if (!snapshot) {
+      snapshot = new Snapshot(rawSnapshot, torrent, self._namespace)
+      self._snapshots.push(snapshot)
+    }
+    return snapshot
   })
 }
 
@@ -132,24 +149,4 @@ Planktos.prototype.removeSnapshot = function (hash) {
       })
     })
   })
-}
-
-Planktos.prototype.startSeeder = function () {
-  let self = this
-  if (self._seeder) return self._seeder
-  self._seeder = new Seeder()
-
-  let tabElect = new TabElect('planktos')
-  tabElect.on('elected', self._seeder.start.bind(self._seeder))
-  tabElect.on('deposed', self._seeder.stop.bind(self._seeder))
-
-  self._snapshotStore.on('add', function (change) {
-    self._seeder.add(new Snapshot(change.value, self._namespace))
-  })
-
-  self._snapshotStore.values().then(rawSnapshots => {
-    rawSnapshots.forEach(s => self._seeder.add(new Snapshot(s, self._namespace)))
-  })
-
-  return self._seeder
 }
