@@ -140,12 +140,15 @@ Planktos.prototype.removeSnapshot = function (hash) {
       self._snapshots.splice(index, 1) // Delete snapshot at `index`
       if (self._seeder) self._seeder.remove(hash)
     }
-    return new Promise(function (resolve, reject) {
-      let transaction = self._snapshotStore.transaction()
-      transaction.json(function (err, rawSnapshots) {
-        if (err) return reject(err)
-        let key = Object.keys(rawSnapshots).find(k => rawSnapshots[k].hash === hash)
-        resolve(key == null ? undefined : transaction.remove(key))
+    // NOTE the snapshot's hash is also the torrent's infoHash.. currently!
+    self._aethertorrent.remove(hash).then(() => {
+      return new Promise(function (resolve, reject) {
+        let transaction = self._snapshotStore.transaction()
+        transaction.json(function (err, rawSnapshots) {
+          if (err) return reject(err)
+          let key = Object.keys(rawSnapshots).find(k => rawSnapshots[k].hash === hash)
+          resolve(key == null ? undefined : transaction.remove(key))
+        })
       })
     })
   })
