@@ -73,7 +73,7 @@ function writeManifestSync (srcDir, dstDir, filesDir, mappings) {
   for (let map of mappings) {
     relMappings[map.src.substr(srcDir.length + 1)] = map.dst.substr(filesDir.length + 1)
   }
-  let buff = new Buffer(JSON.stringify(relMappings))
+  let buff = Buffer.from(JSON.stringify(relMappings))
   fs.writeFileSync(dstDir + '/manifest.json', buff)
 }
 

@@ -31,8 +31,8 @@ describe('sanity', function () {
 
         checkTorrent(rootDir, pathToContents, pathToHash)
 
-        assert(getContents('/planktos/files/' + pathToHash['foo.txt']).equals(new Buffer(pathToContents['foo.txt'])))
-        assert(getContents('/planktos/files/' + pathToHash['dir/nested.txt']).equals(new Buffer(pathToContents['dir/nested.txt'])))
+        assert(getContents('/planktos/files/' + pathToHash['foo.txt']).equals(Buffer.from(pathToContents['foo.txt'])))
+        assert(getContents('/planktos/files/' + pathToHash['dir/nested.txt']).equals(Buffer.from(pathToContents['dir/nested.txt'])))
         assert.notEqual(getContents('/planktos/install.js').length, 0)
         assert.notEqual(getContents('/planktos/planktos.min.js').length, 0)
         assert.notEqual(getContents('/planktos.sw.js').length, 0)
@@ -66,7 +66,7 @@ describe('single file torrent', function () {
 
         checkTorrent(rootDir, pathToContents, pathToHash)
 
-        assert(getContents('/planktos/files/' + pathToHash['foo.txt']).equals(new Buffer(pathToContents['foo.txt'])))
+        assert(getContents('/planktos/files/' + pathToHash['foo.txt']).equals(Buffer.from(pathToContents['foo.txt'])))
         assert.notEqual(getContents('/planktos/install.js').length, 0)
         assert.notEqual(getContents('/planktos/planktos.min.js').length, 0)
         assert.notEqual(getContents('/planktos.sw.js').length, 0)
@@ -164,7 +164,7 @@ function createTestDir (rootDir, schema, cb) {
 }
 
 function tmpDir () {
-  let tmpDirPath = os.tmpDir() + '/' + Math.random().toString(16).substr(2)
+  let tmpDirPath = os.tmpdir() + '/' + Math.random().toString(16).substr(2)
   fs.mkdirSync(tmpDirPath)
   return tmpDirPath
 }
