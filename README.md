@@ -31,6 +31,8 @@ A special thanks to the [WebTorrent](https://webtorrent.io) project, which is us
 
 ## Why
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/xuset/planktos.svg)](https://greenkeeper.io/)
+
 - Let users load your static assets from each other, instead of hitting your web servers
 - After a user visits your website for the first time, he/she will be able to load it even if your web servers go down
 - Planktos auto scales your website when traffic increases
