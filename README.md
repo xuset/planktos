@@ -50,7 +50,7 @@ In the previous step, the Planktos CLI copied the service worker, named `plankto
 
 `<script src="/planktos/install.js"></script>`
 
-After updating your website's files, users viewing the website won't receive the updates until after the torrent is repackaged, which can be done by running the Planktos CLI again.
+After updating your website's files you have to run the Planktos CLI again. If you already have a build script for your website, you should add the Planktos command to it.
 
 That was it. To test that everything is working as expected, use your browser's developer tools to inspect the network requests your website makes.
 
