@@ -30,7 +30,7 @@
   "scripts": {
     "standard": "standard",
     "bundle": "./bin/build.sh",
-    "pre-test": "standard && ./bin/build.sh && ./bin/setup.js -r test/www/v1 && ./bin/setup.js -r test/www/v2",
+    "pre-test": "standard && ./bin/build.sh && ./bin/setup.js -r test/www/v1 && ./bin/setup.js -r test/www/v2 test/www/v2/foo.txt",
     "test": "npm run -s pre-test && mocha test/testCli.js && karma start",
     "watch": "nodemon --exec 'npm test'",
     "prepublish": "standard && ./bin/build.sh"
