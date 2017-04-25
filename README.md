@@ -88,7 +88,11 @@ Once you have some changes, you can test them with: `npm test`
 
 Or to automatically run the tests when files are changed: `npm run watch`
 
-NOTE: The browser tests may occasionally timeout if the browser is not focused
+Some helpful tidbits:
+ * The browser tests may occasionally timeout if the browser is not focused
+ * Tests will fail on some systems with `TypeError: Cannot read property 'unmask' of undefined` because of an incompatible optional dependency of a dependency. To fix this just delete the `node_modules/bufferutil`
+
+
 
 
 ## License
