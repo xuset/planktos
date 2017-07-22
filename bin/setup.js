@@ -110,7 +110,7 @@ function getHash (src, cb) {
 function copyFileAsHash (srcFile, dstDir, cb) {
   getHash(srcFile, function (err, hash) {
     if (err) return cb(err)
-    const dstFile = dstDir + '/' + hash
+    const dstFile = dstDir + '/' + hash + '-' + path.basename(srcFile)
     copyFile(srcFile, dstFile, 'wx', function (err) {
       if (err) cb(err)
       else cb(null, {src: srcFile, dst: dstFile})

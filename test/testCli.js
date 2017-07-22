@@ -156,7 +156,7 @@ function createTestDir (rootDir, schema, cb) {
     let pathToHash = {}
     values.forEach((val) => {
       let [relPath, hash] = val
-      pathToHash[relPath] = hash
+      pathToHash[relPath] = hash + '-' + path.basename(relPath)
     })
 
     cb(pathToHash)
