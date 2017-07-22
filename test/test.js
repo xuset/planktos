@@ -233,13 +233,13 @@ describe('lib', function () {
       assert.equal(response.statusText, 'OK')
       assert.notEqual(response.headers.get('Content-Length'), null)
       assert.equal(response.headers.get('Accept-Ranges'), 'bytes')
-      assert.equal(response.headers.get('Content-Type'), 'text/plain')
+      // Not 'text/plain' because hmtl is injected
+      assert.equal(response.headers.get('Content-Type'), 'text/html')
       return response.blob()
     })
     .then(blob => blobToText(blob))
     .then(text => {
       assert(text.startsWith('<!doctype html>'))
-      assert(text.includes('<iframe'))
     })
   })
 
