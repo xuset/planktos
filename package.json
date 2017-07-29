@@ -10,7 +10,8 @@
     "idb-kv-store": "^4.3.1",
     "minimist": "^1.2.0",
     "parse-torrent-file": "^4.0.2",
-    "run-parallel-limit": "^1.0.3"
+    "run-parallel-limit": "^1.0.3",
+    "stream-to-blob": "^1.0.0"
   },
   "devDependencies": {
     "browserify": "^14.3.0",
