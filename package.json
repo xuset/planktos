@@ -10,6 +10,7 @@
     "idb-kv-store": "^4.3.1",
     "minimist": "^1.2.0",
     "parse-torrent-file": "^4.0.2",
+    "readable-stream-node-to-web": "^1.0.0",
     "run-parallel-limit": "^1.0.3",
     "stream-to-blob": "^1.0.0"
   },
