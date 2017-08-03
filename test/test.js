@@ -243,8 +243,32 @@ describe('lib', function () {
     })
   })
 
-  it('planktos.fetch() and inject for html files', function () {
-    return planktos.fetch(location.origin + v1Base + 'foo/', {root: v1Base, inject: true})
+  it('planktos.fetch() and streaming inject for html files', function () {
+    let opts = {root: v1Base, inject: true}
+    return planktos.fetch(location.origin + v1Base + 'foo/', opts)
+    .then(response => {
+      assert.equal(response.status, 200)
+      assert.equal(response.statusText, 'OK')
+      assert.notEqual(response.headers.get('Content-Length'), null)
+      assert.equal(response.headers.get('Accept-Ranges'), 'bytes')
+      assert.equal(response.headers.get('Content-Type'), 'text/html')
+      return response.blob()
+    })
+    .then(blob => blobToText(blob))
+    .then(text => {
+      assert(text.startsWith('<script'))
+      assert(text.indexOf('planktos/planktos.min.js') !== -1)
+      if (typeof ReadableStream === 'undefined') {
+        assert(text.includes('document.documentElement.innerHTML = '))
+      } else {
+        assert(text.indexOf('bar\n') !== -1)
+      }
+    })
+  })
+
+  it('planktos.fetch() and non-streaming inject for html files', function () {
+    let opts = {root: v1Base, inject: true, stream: false}
+    return planktos.fetch(location.origin + v1Base + 'foo/', opts)
     .then(response => {
       assert.equal(response.status, 200)
       assert.equal(response.statusText, 'OK')
@@ -257,6 +281,7 @@ describe('lib', function () {
     .then(text => {
       assert(text.startsWith('<!doctype html>'))
       assert(text.includes('document.documentElement.innerHTML = '))
+      assert(text.indexOf('planktos/planktos.min.js') !== -1)
     })
   })
 
@@ -540,7 +565,7 @@ describe('service worker', function () {
     return iframe.contentWindow.fetch(v1Base + 'foo')
     .then(resp => resp.text())
     .then(text => {
-      assert.equal(text, 'bar\n')
+      assert(text.includes('bar\n'))
     })
   })
 
