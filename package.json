@@ -16,7 +16,7 @@
   },
   "devDependencies": {
     "browserify": "^14.3.0",
-    "exorcist": "^0.4.0",
+    "exorcist": "^1.0.0",
     "express": "^4.15.2",
     "karma": "^1.6.0",
     "karma-chrome-launcher": "^2.0.0",
