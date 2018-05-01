@@ -35,7 +35,7 @@ module.exports = function (config) {
     // test results reporter to use
     // possible values: 'dots', 'progress'
     // available reporters: https://npmjs.org/browse/keyword/karma-reporter
-    reporters: process.env.CI ? ['dots', 'saucelabs'] : ['dots'],
+    reporters: ['dots'],
 
     // web server port
     port: 9876,
@@ -55,7 +55,7 @@ module.exports = function (config) {
     // start these browsers
     // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
     browsers: process.env.CI
-      ? ['SL_Chrome', 'SL_Firefox']
+      ? ['ChromeHeadlessNoSandbox', 'FirefoxHeadless']
       : ['Chrome'],
 
     // Continuous Integration mode
@@ -66,19 +66,14 @@ module.exports = function (config) {
     // how many browser should be started simultaneous
     concurrency: Infinity,
 
-    sauceLabs: {
-      testName: 'planktos'
-    },
     customLaunchers: {
-      SL_Chrome: {
-        base: 'SauceLabs',
-        browserName: 'chrome',
-        version: 'latest'
+      ChromeHeadlessNoSandbox: {
+        base: 'ChromeHeadless',
+        flags: ['--no-sandbox']
       },
-      SL_Firefox: {
-        base: 'SauceLabs',
-        browserName: 'firefox',
-        version: 'latest'
+      FirefoxHeadless: {
+        base: 'Firefox',
+        flags: ['-headless']
       }
     }
   })
