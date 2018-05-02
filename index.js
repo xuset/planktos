@@ -27,18 +27,18 @@ function Planktos (opts) {
 
 Planktos.prototype.getFile = function (fpath) {
   return this.getAllSnapshots()
-  .then(snapshots => {
-    if (snapshots.length === 0) throw new Error('No local snapshot. Call planktos.update()')
-    return snapshots[snapshots.length - 1].getFile(fpath)
-  })
+    .then(snapshots => {
+      if (snapshots.length === 0) throw new Error('No local snapshot. Call planktos.update()')
+      return snapshots[snapshots.length - 1].getFile(fpath)
+    })
 }
 
 Planktos.prototype.fetch = function (req, opts) {
   return this.getAllSnapshots()
-  .then(snapshots => {
-    if (snapshots.length === 0) throw new Error('No local snapshot. Call planktos.update()')
-    return snapshots[snapshots.length - 1].fetch(req, opts)
-  })
+    .then(snapshots => {
+      if (snapshots.length === 0) throw new Error('No local snapshot. Call planktos.update()')
+      return snapshots[snapshots.length - 1].fetch(req, opts)
+    })
 }
 
 Planktos.prototype.getAllSnapshots = function () {
@@ -47,13 +47,13 @@ Planktos.prototype.getAllSnapshots = function () {
   if (self._snapshotPromise) return self._snapshotPromise
 
   self._snapshotPromise = self._snapshotStore.values()
-  .then(rawSnapshots => {
-    self._snapshotPromise = null
-    self._snapshots = []
+    .then(rawSnapshots => {
+      self._snapshotPromise = null
+      self._snapshots = []
 
-    return Promise.all(rawSnapshots.map(rs => self._add(rs)))
-  })
-  .then(() => self._snapshots)
+      return Promise.all(rawSnapshots.map(rs => self._add(rs)))
+    })
+    .then(() => self._snapshots)
 
   return self._snapshotPromise
 }
@@ -71,10 +71,10 @@ Planktos.prototype.update = function (rootUrl) {
     global.fetch(torrentMetaUrl).then(response => response.arrayBuffer()),
     global.caches.open('planktos-' + self._namespace).then(cache => cache.addAll(cacheUrls))
   ])
-  .then(results => {
-    let [manifest, torrentMetaBuffer] = results
-    return self._storeSnapshot(manifest, torrentMetaBuffer, rootUrl)
-  })
+    .then(results => {
+      let [manifest, torrentMetaBuffer] = results
+      return self._storeSnapshot(manifest, torrentMetaBuffer, rootUrl)
+    })
 }
 
 Planktos.prototype._storeSnapshot = function (manifest, torrentMetaBuffer, rootUrl) {
@@ -104,13 +104,13 @@ Planktos.prototype._storeSnapshot = function (manifest, torrentMetaBuffer, rootU
           resolve(rawSnapshot)
         } else {
           transaction.add(rawSnapshot)
-          .then(() => resolve(rawSnapshot))
-          .catch(err => reject(err))
+            .then(() => resolve(rawSnapshot))
+            .catch(err => reject(err))
         }
       })
     })
   })
-  .then(rawSnapshot => self._add(rawSnapshot))
+    .then(rawSnapshot => self._add(rawSnapshot))
 }
 
 Planktos.prototype._add = function (rawSnapshot) {
@@ -121,14 +121,14 @@ Planktos.prototype._add = function (rawSnapshot) {
     webseed.pathname = path.join(webseed.pathname, 'planktos/files', torrentMeta.files[0].name)
   }
   return self._aethertorrent.add(rawSnapshot.torrentMetaBuffer, {webseeds: webseed.toString()})
-  .then(torrent => {
-    let snapshot = self._snapshots.find(s => s.hash === rawSnapshot.hash)
-    if (!snapshot) {
-      snapshot = new Snapshot(rawSnapshot, torrent, self._namespace)
-      self._snapshots.push(snapshot)
-    }
-    return snapshot
-  })
+    .then(torrent => {
+      let snapshot = self._snapshots.find(s => s.hash === rawSnapshot.hash)
+      if (!snapshot) {
+        snapshot = new Snapshot(rawSnapshot, torrent, self._namespace)
+        self._snapshots.push(snapshot)
+      }
+      return snapshot
+    })
 }
 
 Planktos.prototype.removeSnapshot = function (hash) {

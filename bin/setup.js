@@ -52,7 +52,7 @@ function setup (rootDir, includes, opts, cb) {
     // From BitTorrent Documentation: "In the single file case, the name key is the name of
     // a file, in the multiple file case, it's the name of a directory."
     opts.name = torrentFiles.length !== 1 ? RESERVED_DIR + '/files'
-        : torrentFiles[0].slice(torrentFiles[0].lastIndexOf('/') + 1)
+      : torrentFiles[0].slice(torrentFiles[0].lastIndexOf('/') + 1)
 
     createTorrent(torrentFiles, opts, function (err, torrent) {
       if (err) return cb(err)

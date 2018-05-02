@@ -7,7 +7,7 @@
   if (attributes['data-sw']) sw = attributes['data-sw'].value
 
   navigator.serviceWorker.register(sw)
-  .catch(function (err) {
-    console.log('Service worker registration failed with ' + err)
-  })
+    .catch(function (err) {
+      console.log('Service worker registration failed with ' + err)
+    })
 })()
