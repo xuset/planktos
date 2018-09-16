@@ -12,9 +12,26 @@ const crypto = require('crypto')
 const createTorrent = require('create-torrent')
 const minimist = require('minimist')
 const packageJson = require('../package.json')
-const FS_CONCURRENCY = 2
+const convict = require('convict')
 
+const FS_CONCURRENCY = 2
 const RESERVED_DIR = 'planktos'
+const config = convict({
+  announceList: {
+    doc: 'Announce URI used by create-torrent.',
+    format: Array,
+    default: [
+      'udp://tracker.openbittorrent.com:80',
+      'udp://tracker.internetwarriors.net:1337',
+      'udp://tracker.leechers-paradise.org:6969',
+      'udp://tracker.coppersurfer.tk:6969',
+      'udp://exodus.desync.com:6969',
+      'wss://tracker.btorrent.xyz',
+      'wss://tracker.openwebtorrent.com',
+      'wss://tracker.fastcast.nz'
+    ]
+  }
+})
 
 function copyLib (rootDir, cb) {
   rootDir = absPath(rootDir)
@@ -53,6 +70,7 @@ function setup (rootDir, includes, opts, cb) {
     // a file, in the multiple file case, it's the name of a directory."
     opts.name = torrentFiles.length !== 1 ? RESERVED_DIR + '/files'
       : torrentFiles[0].slice(torrentFiles[0].lastIndexOf('/') + 1)
+    opts.createdBy = 'Planktos'
 
     createTorrent(torrentFiles, opts, function (err, torrent) {
       if (err) return cb(err)
@@ -185,6 +203,8 @@ function printHelp () {
   console.error('-l,--lib-only      only copy the planktos library and service worker. This')
   console.error('                   does not generate the torrent')
   console.error('-v,--version       print the version and exit')
+  console.error('-c,--config        config file. Its valuse are superseeded by command line')
+  console.error('                   arguments.')
 }
 
 if (require.main === module) {
@@ -194,7 +214,8 @@ if (require.main === module) {
       r: 'root',
       w: 'webseed',
       l: 'lib-only',
-      v: 'version'
+      v: 'version',
+      c: 'config'
     },
     boolean: [
       'lib-only',
@@ -207,8 +228,14 @@ if (require.main === module) {
   }
   const rootDir = argv.root || process.cwd()
   const includes = argv['_'].length === 0 ? [rootDir] : argv['_']
+
+  if (argv['config']) {
+    config.loadFile(argv['config'])
+  }
+  config.validate({ allowed: 'strict' })
   const opts = {
-    urlList: argv.webseed
+    urlList: argv.webseed,
+    announceList: config.get('announceList')
   }
 
   if (argv['lib-only']) {
