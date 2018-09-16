@@ -131,7 +131,7 @@ function copyFileAsHash (srcFile, dstDir, cb) {
     const dstFile = dstDir + '/' + hash + '-' + path.basename(srcFile)
     copyFile(srcFile, dstFile, 'wx', function (err) {
       if (err) cb(err)
-      else cb(null, {src: srcFile, dst: dstFile})
+      else cb(null, { src: srcFile, dst: dstFile })
     })
   })
 }
@@ -140,7 +140,7 @@ function copyFile (srcFile, dstFile, flags, cb) {
   if (typeof flags === 'function') return copyFile(srcFile, dstFile, undefined, flags)
   if (!cb) cb = noop
   let read = fs.createReadStream(srcFile)
-  let write = fs.createWriteStream(dstFile, {flags: flags})
+  let write = fs.createWriteStream(dstFile, { flags: flags })
 
   read.on('error', function (err) {
     cb(err)

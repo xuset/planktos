@@ -5,6 +5,8 @@ addons:
   firefox: latest
 node_js:
 - 6
+- 8
+- 10
 env:
   global:
   - CI=true

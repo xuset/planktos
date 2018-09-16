@@ -7,7 +7,7 @@ if (global.WorkerGlobalScope) delete global.FileReaderSync
 
 const IdbKvStore = require('idb-kv-store')
 const path = require('path')
-const parseTorrent = require('parse-torrent-file')
+const parseTorrent = require('parse-torrent')
 const Snapshot = require('./lib/snapshot')
 const AetherTorrent = require('aether-torrent')
 
@@ -120,7 +120,7 @@ Planktos.prototype._add = function (rawSnapshot) {
   if (torrentMeta.files.length === 1) {
     webseed.pathname = path.join(webseed.pathname, 'planktos/files', torrentMeta.files[0].name)
   }
-  return self._aethertorrent.add(rawSnapshot.torrentMetaBuffer, {webseeds: webseed.toString()})
+  return self._aethertorrent.add(rawSnapshot.torrentMetaBuffer, { webseeds: webseed.toString() })
     .then(torrent => {
       let snapshot = self._snapshots.find(s => s.hash === rawSnapshot.hash)
       if (!snapshot) {
