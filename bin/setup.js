@@ -17,6 +17,12 @@ const convict = require('convict')
 const FS_CONCURRENCY = 2
 const RESERVED_DIR = 'planktos'
 const config = convict({
+  reservedDir: {
+    doc: 'Directory storing snapshots',
+    format: String,
+    default: RESERVED_DIR,
+    arg: 'dest'
+  },
   announceList: {
     doc: 'Announce URI used by create-torrent.',
     format: Array,
@@ -33,9 +39,11 @@ const config = convict({
   }
 })
 
-function copyLib (rootDir, cb) {
+function copyLib (rootDir, reservedDir, cb) {
   rootDir = absPath(rootDir)
-  const dstDir = rootDir + '/' + RESERVED_DIR
+  cb = cb || reservedDir
+  reservedDir = (typeof reservedDir === 'function' || reservedDir === null) ? RESERVED_DIR : reservedDir
+  const dstDir = rootDir + '/' + reservedDir
   if (!fs.existsSync(dstDir)) fs.mkdirSync(dstDir)
   const tasks = [
     [__dirname + '/../install.js', dstDir + '/install.js'],
@@ -45,12 +53,13 @@ function copyLib (rootDir, cb) {
   parallelLimit(tasks, FS_CONCURRENCY, cb)
 }
 
-function setup (rootDir, includes, opts, cb) {
-  if (typeof opts === 'function') return setup(rootDir, includes, null, opts)
+function setup (rootDir, reservedDir, includes, opts, cb) {
+  if (typeof opts === 'function') return setup(rootDir, reservedDir, includes, null, opts)
+  reservedDir = reservedDir || RESERVED_DIR
   cb = cb || noop
   rootDir = absPath(rootDir)
   includes = includes.map(p => absPath(p))
-  const dstDir = rootDir + '/' + RESERVED_DIR
+  const dstDir = rootDir + '/' + reservedDir + '/'
   const filesDir = dstDir + '/files'
   if (!opts) opts = {}
 
@@ -61,7 +70,7 @@ function setup (rootDir, includes, opts, cb) {
   if (!fs.existsSync(dstDir)) fs.mkdirSync(dstDir)
   if (!fs.existsSync(filesDir)) fs.mkdirSync(filesDir)
 
-  copyAsHash(includes, dstDir, filesDir, function (err, mappings) {
+  copyAsHash(includes, dstDir, filesDir, reservedDir, function (err, mappings) {
     if (err) return cb(err)
 
     let torrentFiles = mappings.map(e => absPath(e.dst))
@@ -80,7 +89,7 @@ function setup (rootDir, includes, opts, cb) {
 
         fs.writeFileSync(dstDir + '/root.torrent', torrent)
         writeManifestSync(rootDir, dstDir, filesDir, mappings)
-        cb(null)
+        cb(null, reservedDir)
       })
     })
   })
@@ -95,7 +104,8 @@ function writeManifestSync (srcDir, dstDir, filesDir, mappings) {
   fs.writeFileSync(dstDir + '/manifest.json', buff)
 }
 
-function copyAsHash (srcList, dstDir, filesDir, cb) {
+function copyAsHash (srcList, dstDir, filesDir, reservedDir, cb) {
+  reservedDir = reservedDir || RESERVED_DIR
   let files = []
 
   for (let item of srcList) {
@@ -198,12 +208,13 @@ function printHelp () {
   console.error('')
   console.error('-r,--root DIR      root directory. All given files and directories must be')
   console.error('                   descendents of the root. Default: cwd')
+  console.error('-d,--dest DIR      destination for snapshots, relative to current directory')
   console.error('-w,--webseed URL   web seed url to include in the generated torrent.')
   console.error('                   Default: none')
   console.error('-l,--lib-only      only copy the planktos library and service worker. This')
   console.error('                   does not generate the torrent')
   console.error('-v,--version       print the version and exit')
-  console.error('-c,--config        config file. Its valuse are superseeded by command line')
+  console.error('-c,--config        config file. Its values are superseeded by command line')
   console.error('                   arguments.')
 }
 
@@ -239,14 +250,14 @@ if (require.main === module) {
   }
 
   if (argv['lib-only']) {
-    copyLib(rootDir, function (err) {
+    copyLib(rootDir, config.get('reservedDir'), function (err) {
       if (err) throw err
       console.log('Successfully copied lib')
     })
   } else if (argv.version) {
     console.log('v' + packageJson.version)
   } else {
-    setup(rootDir, includes, opts, function (err) {
+    setup(rootDir, config.get('reservedDir'), includes, opts, function (err) {
       if (err) throw err
       console.log('Successfully created torrent')
     })

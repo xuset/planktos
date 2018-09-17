@@ -22,7 +22,7 @@ addEventListener('fetch', function (event) {
   if (url.pathname.replace(root, '').startsWith('/planktos/files/')) return
 
   // Fallback to http if the file was not found in the torrent or an error occurs
-  let responsePromise = planktos.fetch(event, { root: root })
+  let responsePromise = planktos.fetch(event, { root: root, snapshotDir: 'planktos' })
     .catch(err => console.log('PLANKTOS-ERROR', err))
     .then(response => response != null ? response : fetch(event.request))
 

@@ -11,14 +11,10 @@ const parseTorrent = require('parse-torrent')
 const Snapshot = require('./lib/snapshot')
 const AetherTorrent = require('aether-torrent')
 
-const preCached = [
-  '/planktos/planktos.min.js',
-  '/planktos/install.js'
-]
-
 function Planktos (opts) {
   opts = opts || {}
   this._namespace = opts.namespace != null ? opts.namespace : ''
+  this._dir = opts.dir != null ? opts.dir : 'planktos'
   this._snapshots = null
   this._snapshotPromise = null
   this._snapshotStore = new IdbKvStore('planktos-snapshots-' + this._namespace)
@@ -62,9 +58,12 @@ Planktos.prototype.update = function (rootUrl) {
   let self = this
   if (!(rootUrl instanceof URL)) rootUrl = new URL(rootUrl, global.location.origin)
 
-  let torrentMetaUrl = new URL(path.join(rootUrl.pathname, 'planktos/root.torrent'), rootUrl)
-  let manifestUrl = new URL(path.join(rootUrl.pathname, 'planktos/manifest.json'), rootUrl)
-  let cacheUrls = preCached.map(f => new URL(path.join(rootUrl.pathname, f), rootUrl))
+  let torrentMetaUrl = new URL(path.join(rootUrl.pathname, this._dir + '/root.torrent'), rootUrl)
+  let manifestUrl = new URL(path.join(rootUrl.pathname, this._dir + '/manifest.json'), rootUrl)
+  let cacheUrls = [
+    `/${this._dir}/planktos.min.js`,
+    `/${this._dir}/install.js`
+  ].map(f => new URL(path.join(rootUrl.pathname, f), rootUrl))
 
   return Promise.all([
     global.fetch(manifestUrl).then(response => response.json()),
@@ -118,7 +117,7 @@ Planktos.prototype._add = function (rawSnapshot) {
   let torrentMeta = parseTorrent(Buffer.from(rawSnapshot.torrentMetaBuffer))
   let webseed = new URL(rawSnapshot.rootUrl)
   if (torrentMeta.files.length === 1) {
-    webseed.pathname = path.join(webseed.pathname, 'planktos/files', torrentMeta.files[0].name)
+    webseed.pathname = path.join(webseed.pathname, `${this._dir}/files`, torrentMeta.files[0].name)
   }
   return self._aethertorrent.add(rawSnapshot.torrentMetaBuffer, { webseeds: webseed.toString() })
     .then(torrent => {
@@ -136,7 +135,7 @@ Planktos.prototype.removeSnapshot = function (hash) {
   return self.getAllSnapshots().then(() => { // Ensure self._snapshots is initialized
     let index = self._snapshots.findIndex(s => s.hash === hash)
     if (index !== -1) {
-      self._snapshots[index].destroy()
+      self._snapshots[index]._destroy()
       self._snapshots.splice(index, 1) // Delete snapshot at `index`
       if (self._seeder) self._seeder.remove(hash)
     }

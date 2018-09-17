@@ -17,7 +17,7 @@ describe('sanity', function () {
     let rootDir = tmpDir()
 
     createTestDir(rootDir, pathToContents, function (pathToHash) {
-      setup.setup(rootDir, [rootDir], function (err) {
+      setup.setup(rootDir, null, [rootDir], function (err, reservedDir) {
         assert(err == null, err)
 
         const makeAbs = (relPath) => path.normalize(rootDir + '/' + relPath)
@@ -29,13 +29,13 @@ describe('sanity', function () {
           assert.strictEqual(manifest[relPath], pathToHash[relPath])
         })
 
-        checkTorrent(rootDir, pathToContents, pathToHash)
+        checkTorrent(rootDir, reservedDir, pathToContents, pathToHash)
 
-        assert(getContents('/planktos/files/' + pathToHash['foo.txt']).equals(Buffer.from(pathToContents['foo.txt'])))
-        assert(getContents('/planktos/files/' + pathToHash['dir/nested.txt']).equals(Buffer.from(pathToContents['dir/nested.txt'])))
-        assert.notStrictEqual(getContents('/planktos/install.js').length, 0)
-        assert.notStrictEqual(getContents('/planktos/planktos.min.js').length, 0)
-        assert.notStrictEqual(getContents('/planktos.sw.js').length, 0)
+        assert(getContents(`/${reservedDir}/files/` + pathToHash['foo.txt']).equals(Buffer.from(pathToContents['foo.txt'])))
+        assert(getContents(`/${reservedDir}/files/` + pathToHash['dir/nested.txt']).equals(Buffer.from(pathToContents['dir/nested.txt'])))
+        assert.notStrictEqual(getContents(`/${reservedDir}/install.js`).length, 0)
+        assert.notStrictEqual(getContents(`/${reservedDir}/planktos.min.js`).length, 0)
+        assert.notStrictEqual(getContents(`/planktos.sw.js`).length, 0)
 
         done()
       })
@@ -52,24 +52,24 @@ describe('single file torrent', function () {
     let rootDir = tmpDir()
 
     createTestDir(rootDir, pathToContents, function (pathToHash) {
-      setup.setup(rootDir, [rootDir], function (err) {
+      setup.setup(rootDir, null, [rootDir], function (err, reservedDir) {
         assert(err == null, err)
 
         const makeAbs = (relPath) => path.normalize(rootDir + '/' + relPath)
         const getContents = (relPath) => fs.readFileSync(makeAbs(relPath))
 
-        let manifest = JSON.parse(getContents('planktos/manifest.json').toString())
+        let manifest = JSON.parse(getContents(`${reservedDir}/manifest.json`).toString())
 
         Object.keys(manifest).forEach((relPath) => {
           assert(manifest[relPath] === pathToHash[relPath])
         })
 
-        checkTorrent(rootDir, pathToContents, pathToHash)
+        checkTorrent(rootDir, reservedDir, pathToContents, pathToHash)
 
-        assert(getContents('/planktos/files/' + pathToHash['foo.txt']).equals(Buffer.from(pathToContents['foo.txt'])))
-        assert.notStrictEqual(getContents('/planktos/install.js').length, 0)
-        assert.notStrictEqual(getContents('/planktos/planktos.min.js').length, 0)
-        assert.notStrictEqual(getContents('/planktos.sw.js').length, 0)
+        assert(getContents(`/${reservedDir}/files/` + pathToHash['foo.txt']).equals(Buffer.from(pathToContents['foo.txt'])))
+        assert.notStrictEqual(getContents(`/${reservedDir}/install.js`).length, 0)
+        assert.notStrictEqual(getContents(`/${reservedDir}/planktos.min.js`).length, 0)
+        assert.notStrictEqual(getContents(`/planktos.sw.js`).length, 0)
 
         done()
       })
@@ -81,14 +81,14 @@ describe('single file torrent', function () {
 /* HELPER FUNCTIONS */
 /********************/
 
-function checkTorrent (rootDir, pathToContents, pathToHash) {
-  const torrentMetaPath = rootDir + '/planktos/root.torrent'
+function checkTorrent (rootDir, reservedDir, pathToContents, pathToHash) {
+  const torrentMetaPath = rootDir + `/${reservedDir}/root.torrent`
   const torrentMeta = parseTorrent(fs.readFileSync(torrentMetaPath))
   const orderedRelFiles = Object.keys(pathToContents).sort()
   const isSingleFileTorrent = torrentMeta.files.length === 1
 
   // If the torrent is a single file torrent its name should be the hash of the first file
-  assert.strictEqual(torrentMeta.name, (!isSingleFileTorrent) ? 'planktos/files' : pathToHash[Object.keys(pathToHash)[0]])
+  assert.strictEqual(torrentMeta.name, (!isSingleFileTorrent) ? `${reservedDir}/files` : pathToHash[Object.keys(pathToHash)[0]])
   assert.notStrictEqual(torrentMeta.announce.length, 0)
 
   assert.deepStrictEqual(
@@ -98,7 +98,7 @@ function checkTorrent (rootDir, pathToContents, pathToHash) {
   assert.deepStrictEqual(
     torrentMeta.files.map((f) => f.path),
     orderedRelFiles.map((relFile) => {
-      if (!isSingleFileTorrent) return 'planktos/files/' + pathToHash[relFile]
+      if (!isSingleFileTorrent) return `${reservedDir}/files/` + pathToHash[relFile]
       else return pathToHash[relFile]
     })
   )
