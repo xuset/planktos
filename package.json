@@ -6,7 +6,7 @@
   "bin": "./bin/setup.js",
   "dependencies": {
     "aether-torrent": "^0.3.0",
-    "convict": "^4.3.2",
+    "convict": "^5.1.0",
     "create-torrent": "^3.29.1",
     "idb-kv-store": "^4.3.1",
     "minimist": "^1.2.0",
