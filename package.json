@@ -7,7 +7,7 @@
   "dependencies": {
     "aether-torrent": "^0.3.0",
     "convict": "^4.3.2",
-    "create-torrent": "^3.29.1",
+    "create-torrent": "^4.2.2",
     "idb-kv-store": "^4.3.1",
     "minimist": "^1.2.0",
     "parse-torrent-file": "^4.0.2",
