@@ -24,7 +24,7 @@
     "karma-firefox-launcher": "^1.0.1",
     "karma-mocha": "^1.3.0",
     "mocha": "^5.1.1",
-    "nodemon": "^1.11.0",
+    "nodemon": "^2.0.0",
     "standard": "^11.0.1",
     "uglify-js": "git://github.com/mishoo/UglifyJS2.git#harmony-v2.7.5"
   },
