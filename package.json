@@ -13,7 +13,7 @@
     "parse-torrent-file": "^4.0.2",
     "readable-stream-node-to-web": "^1.0.0",
     "run-parallel-limit": "^1.0.3",
-    "stream-to-blob": "^1.0.0"
+    "stream-to-blob": "^2.0.1"
   },
   "devDependencies": {
     "browserify": "^16.2.0",
